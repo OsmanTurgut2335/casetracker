@@ -485,6 +485,7 @@ class _MyHomePageState extends State<MyHomePage> {
       }
 
       Globals.itemsList[0].remove(item);
+      Navigator.popUntil(context, (route) => route.isFirst);
     });
   }
 
@@ -658,6 +659,7 @@ class _NewItemScreenState extends State<NewItemScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset : false,
       appBar: AppBar(
         title: Text('New Item'),
       ),
@@ -666,6 +668,7 @@ class _NewItemScreenState extends State<NewItemScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+
             _buildDueDateSelector(),
             SizedBox(height: 16),
             _buildItemNameField(),
@@ -691,32 +694,69 @@ class _NewItemScreenState extends State<NewItemScreen> {
     );
   }
 
+
   Widget _buildDueDateSelector() {
-    return Row(
-      children: [
-        Text('Due Date:'),
-        SizedBox(width: 16),
-        TextButton(
-          onPressed: () async {
-            final pickedDate = await showDatePicker(
-              context: context,
-              initialDate: _selectedDueDate,
-              firstDate: DateTime.now(),
-              lastDate: DateTime(2030),
-            );
-            if (pickedDate != null && pickedDate != _selectedDueDate) {
-              setState(() {
-                _selectedDueDate = pickedDate;
-              });
-            }
-          },
-          child: Text(
-            '${_selectedDueDate.day}/${_selectedDueDate.month}/${_selectedDueDate.year}',
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          Text('Quick Select'),
+          SizedBox(
+            height: 200, // Set the height of the time slots
+            child: Expanded(
+              child: ListView(
+                scrollDirection: Axis.vertical, // Set the scroll direction to vertical
+                children: [
+                  for (final slot in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 30, 45])
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          // Set the selected days for the due date
+                          setState(() {
+                            _selectedDueDate = DateTime.now().add(Duration(days: slot));
+                          });
+                        },
+                        child: Text('$slot days'),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
-        ),
-      ],
+          SizedBox(height: 16),
+          Text('Due Date:'),
+          SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () async {
+                    final pickedDate = await showDatePicker(
+                      context: context,
+                      initialDate: _selectedDueDate,
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime(2030),
+                    );
+                    if (pickedDate != null && pickedDate != _selectedDueDate) {
+                      setState(() {
+                        _selectedDueDate = pickedDate;
+                      });
+                    }
+                  },
+                  child: Text(
+                    '${_selectedDueDate.day}/${_selectedDueDate.month}/${_selectedDueDate.year}',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
+
+
+
 
   Widget _buildItemNameField() {
     return TextField(
