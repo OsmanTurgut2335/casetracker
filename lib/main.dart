@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'intro_screen.dart';
+
+import 'globals.dart'; // Import the globals.dart file
 import 'login_screen.dart';
 
 void main() async {
@@ -22,6 +23,7 @@ extension DateTimeExtension on DateTime {
     return this.year == other.year && this.month == other.month && this.day == other.day;
   }
 }
+
 
 class Item {
   late String name;
@@ -76,10 +78,7 @@ class _MyHomePageState extends State<MyHomePage> {
   PageController _pageController = PageController();
   int _currentPage = 0;
   Map<DateTime, List<Task>> tasksMap = {};
-  List<List<Item>> itemsList = [
-    [],
-    [],
-  ];
+
 
   DateTime _selectedDay = DateTime.now();
 
@@ -106,15 +105,17 @@ class _MyHomePageState extends State<MyHomePage> {
       if (snapshot.value is Map<dynamic, dynamic>) {
         final Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
 
-        itemsList[0].clear();
-
+       Globals.itemsList[0].clear(); // Change here
+        Globals.taskKeysByName.clear();
         data.forEach((key, value) {
           final item = Item(
             name: value['name'],
             description: value['description'],
             date: DateTime.parse(value['date']),
           );
-          itemsList[0].add(item);
+          Globals.taskKeysByName[item.name] = key;
+
+          Globals.itemsList[0].add(item);
         });
 
         setState(() {});
@@ -135,53 +136,71 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("App Title"),
-        actions: [
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'signOut') {
-                _signOut();
-              }
-            },
-            itemBuilder: (BuildContext context) {
-              return [
-                PopupMenuItem(
-                  value: 'signOut',
-                  child: Text('Sign Out'),
-                ),
-              ];
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          _buildTabBar(),
-          _currentPage == 0 ? _buildSearchBar() : SizedBox(),
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentPage = index;
-                });
-              },
-              children: [
-                Expanded(
-                  child: _buildPage(itemsList[0]),
-                ),
+    return WillPopScope(
 
-                _buildCalendarPage(),
-              ],
+      onWillPop: () async{
+
+      await  _fetchDataFromDatabase();
+
+      setState(() {
+        Globals.itemsList[0].sort((a, b) => a.date.compareTo(b.date));
+      });
+        return true ;
+
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text("App Title"),
+          actions: [
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'signOut') {
+                  _signOut();
+                }
+              },
+              itemBuilder: (BuildContext context) {
+                return [
+                  PopupMenuItem(
+                    value: 'signOut',
+                    child: Text('Sign Out'),
+                  ),
+                ];
+              },
             ),
-          ),
-        ],
+          ],
+        ),
+        body: Column(
+          children: [
+            _buildTabBar(),
+            _currentPage == 0 ? _buildSearchBar() : SizedBox(),
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentPage = index;
+                    if (index == 1) {
+                      // Update _selectedDay when navigating to the second page
+                      _selectedDay = DateTime.now();
+                      _fetchTasksForSelectedDay(_selectedDay);
+                    }
+                  });
+                },
+                children: [
+                  Expanded(
+                    child: _buildPage(Globals.itemsList[0]),
+                  ),
+
+                  _buildCalendarPage(),
+                ],
+              ),
+            ),
+          ],
+        ),
+        floatingActionButton: _currentPage == 0
+            ? _buildFloatingButton(context)
+            : null,
       ),
-      floatingActionButton: _currentPage == 0
-          ? _buildFloatingButton(context)
-          : null,
     );
   }
 
@@ -229,25 +248,28 @@ class _MyHomePageState extends State<MyHomePage> {
             itemCount: items.length,
             itemBuilder: (context, index) {
               final item = items[index];
+
               final daysLeft = _calculateDaysLeft(item.date);
-              final daysLeftText = daysLeft == 0
-                  ? 'Due today'
-                  : daysLeft > 0
-                  ? '$daysLeft days left'
-                  : 'Expired';
+              String dueText = daysLeft == null ? 'Expired' : 'Active';
 
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 5.0),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.lightBlue, // Set your desired background color
-                    borderRadius: BorderRadius.circular(8.0), // Optional: Add rounded corners
+                    color: Colors.lightBlue,
+                    borderRadius: BorderRadius.circular(8.0),
                   ),
                   child: ListTile(
                     title: Text(
-                      '${item.name} - ${_formatDate(item.date)} - $daysLeftText',
+                      '${item.name} - ${_formatDate(item.date)}',
                       style: TextStyle(
-                        color: Colors.white, // Set text color to contrast with the background
+                        color: Colors.white,
+                      ),
+                    ),
+                    subtitle: Text(
+                      dueText,
+                      style: TextStyle(
+                        color: Colors.white,
                       ),
                     ),
                     onTap: () {
@@ -278,29 +300,19 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
 
-
   Widget _buildCalendarPage() {
-    // Clear tasksMap before populating it again
-    tasksMap.clear();
-
-    itemsList[0].forEach((item) {
-      tasksMap[item.date] = tasksMap[item.date] ?? [];
-      tasksMap[item.date]!.add(Task(details: item.name, date: item.date));
-    });
-
     return Column(
       children: [
         TableCalendar(
           focusedDay: _selectedDay,
           firstDay: DateTime.utc(2020, 1, 1),
           lastDay: DateTime.utc(2030, 12, 31),
-          onDaySelected: (selectedDay, focusedDay) {
+          onDaySelected: (selectedDay, focusedDay) async {
             setState(() {
               _selectedDay = selectedDay;
             });
-
             // Fetch tasks for the selected day from the database
-            _fetchTasksForSelectedDay(selectedDay);
+            await _fetchTasksForSelectedDay(selectedDay);
           },
         ),
         SizedBox(height: 16),
@@ -308,14 +320,15 @@ class _MyHomePageState extends State<MyHomePage> {
           Column(
             children: [
               Text('Tasks for ${_formatDate(_selectedDay)}:'),
-              GestureDetector(
-                onTap: () {
-                  _navigateToDetailsPage(tasksMap[_selectedDay]!.first);
-                },
-                child: ListTile(
-                  title: Text(tasksMap[_selectedDay]!.first.details),
+              for (final task in tasksMap[_selectedDay]!)
+                GestureDetector(
+                  onTap: () {
+                    _navigateToDetailsPage(task);
+                  },
+                  child: ListTile(
+                    title: Text(task.details),
+                  ),
                 ),
-              ),
             ],
           )
         else
@@ -327,76 +340,30 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
 
-/*User? user = FirebaseAuth.instance.currentUser;
-
-    if (user != null) {
-      final firebaseRef = FirebaseDatabase(
-        databaseURL:
-        "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
-      ).reference();
-      final snapshot = await firebaseRef.get();
-
-      if (snapshot.value != null) {
-        final Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;*/
 
   Future<void> _fetchTasksForSelectedDay(DateTime selectedDay) async {
-    User? user = FirebaseAuth.instance.currentUser;
+    // Clear tasksMap before populating it again
+    tasksMap.clear();
 
-    if (user != null) {
-      if (DateTime.now().isSameDate(selectedDay)) {
-        // If the selected day is today, fetch tasks from local itemsList
-        final todayTasks = itemsList[0].where((item) {
-          return item.date.isSameDate(selectedDay);
-        }).toList();
+    Globals.itemsList.forEach((items) {
+      items.forEach((item) {
 
-        tasksMap[selectedDay] = todayTasks.map((item) {
-          return Task(details: item.name, date: item.date);
-        }).toList();
+        if (item.date.isSameDate(selectedDay)) {
 
-        setState(() {});
-      } else {
-        // Fetch tasks for the selected day from the database
-        final firebaseRef = FirebaseDatabase(
-          databaseURL:
-          "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
-        ).reference();
-        final snapshot = await firebaseRef.get();
-
-        if (snapshot.value != null) {
-          final Map<dynamic, dynamic> data =snapshot.value as Map<dynamic, dynamic>;
-
-          tasksMap[selectedDay] = [];
-
-          data.forEach((key, value) {
-            final task = Task(
-              details: value['name'],
-              date: DateTime.parse(value['date']),
-            );
-            tasksMap[selectedDay]!.add(task);
-          });
-
-          setState(() {});
+          tasksMap[selectedDay] = tasksMap[selectedDay] ?? [];
+          tasksMap[selectedDay]!.add(Task(details: item.name, date: item.date));
         }
-      }
-    }
+      });
+    });
 
+    setState(() {});
   }
 
 
 
-  Widget _buildTasksForSelectedDay(List<Task> tasks) {
-    return tasks.isNotEmpty
-        ? Column(
-      children: [
-        Text('Tasks for ${_formatDate(_selectedDay)}:'),
-        for (Task task in tasks)
-          ListTile(
-            title: Text(task.details),
-          ),
-      ],
-    )
-        : Text('No tasks for ${_formatDate(_selectedDay)}');
-  }
+
+
+
   void _navigateToDetailsPage(Task task) {
     Navigator.push(
       context,
@@ -442,7 +409,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _addItem(Item newItem) {
     setState(() {
-      itemsList[0].add(newItem);
+      Globals.itemsList[0].add(newItem);
 
       // Get the current authenticated user
       User? user = FirebaseAuth.instance.currentUser;
@@ -476,19 +443,12 @@ class _MyHomePageState extends State<MyHomePage> {
         // Set the value of the new task using the generated key
         newTaskReference.set(newTaskData);
 
+        Globals.taskKeysByName[newItem.name] = newTaskReference.key!;
         // Print statement to check if data is added to the database
         print("Task added to the database with key: ${newTaskReference.key}");
       }
     });
   }
-
-
-
-
-
-
-
-
 
   Future<Item?> _navigateToNewItemScreen(BuildContext context) async {
     return await Navigator.push(
@@ -501,7 +461,30 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _removeItem(Item item) {
     setState(() {
-      itemsList[0].remove(item);
+
+      // Get the current authenticated user
+      User? user = FirebaseAuth.instance.currentUser;
+
+      // Print statement to check if user is null
+      print("Current user: $user");
+
+      if (user != null) {
+        final firebaseRef = FirebaseDatabase(
+          databaseURL:
+          "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
+        ).reference();
+
+        String? taskKey = Globals.taskKeysByName[item.name];
+        // Update the reference to include the user's UID
+        DatabaseReference userTaskReference =
+        firebaseRef.child('users').child(user.uid).child(taskKey!);
+        print("KANKAAAA $taskKey");
+
+        userTaskReference.remove();
+
+      }
+
+      Globals.itemsList[0].remove(item);
     });
   }
 
@@ -509,11 +492,14 @@ class _MyHomePageState extends State<MyHomePage> {
     return "${date.day}/${date.month}/${date.year}";
   }
 
-  int _calculateDaysLeft(DateTime date) {
+  int? _calculateDaysLeft(DateTime date) {
     final currentDate = DateTime.now();
     final difference = date.difference(currentDate);
-    return difference.inDays;
+    return difference.isNegative ? null : difference.inDays;
   }
+
+
+
 }
 
 
@@ -537,6 +523,7 @@ class DetailsPage extends StatefulWidget {
 }
 
 class _DetailsPageState extends State<DetailsPage> {
+
   Item _item = Item(name: "", description: "", date: DateTime.now());
 
   @override
@@ -584,6 +571,7 @@ class _DetailsPageState extends State<DetailsPage> {
                         ),
                         TextButton(
                           onPressed: () {
+
                             Navigator.popUntil(
                               context,
                                   (route) => route.isFirst,
@@ -612,7 +600,6 @@ class _DetailsPageState extends State<DetailsPage> {
         builder: (context) => EditItemScreen(item: _item),
       ),
     );
-
     if (editedItem != null) {
       // Handle the edited item, update the UI, and save changes to the database if needed.
       // For simplicity, you can print the edited item.
@@ -626,11 +613,35 @@ class _DetailsPageState extends State<DetailsPage> {
         _item.date = editedItem.date;
       });
     }
+
   }
 
   String _formatDate(DateTime date) {
     return "${date.day}/${date.month}/${date.year}";
   }
+
+  int _calculateDaysLeft(DateTime date) {
+    final currentDate = DateTime.now();
+    final difference = date.difference(currentDate);
+    return difference.inDays;
+
+}
+
+  Future<void> _selectDate(BuildContext context) async {
+    DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _item.date,
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2030),
+    );
+
+    if (pickedDate != null && pickedDate != _item.date) {
+      setState(() {
+        _item.date = pickedDate;
+      });
+    }
+  }
+
 }
 
 
@@ -732,9 +743,10 @@ class _NewItemScreenState extends State<NewItemScreen> {
     return true; // Add your validation logic here
   }
 }
-// EditItemScreen class
+
 class EditItemScreen extends StatefulWidget {
   final Item item;
+
 
   EditItemScreen({required this.item});
 
@@ -742,17 +754,39 @@ class EditItemScreen extends StatefulWidget {
   _EditItemScreenState createState() => _EditItemScreenState();
 }
 
-class _EditItemScreenState extends State<EditItemScreen> {
+class _EditItemScreenState extends State<EditItemScreen>  with RouteAware {
   DateTime _selectedDueDate = DateTime.now();
   TextEditingController _itemNameController = TextEditingController();
   TextEditingController _descriptionController = TextEditingController();
+  late String itemName ;
+  late String keyValue;
+  late String targetValue ;
+  late String foundKey ;
+  late String? taskKey;
+  String findKeyByValue(Map<String, String> map, String targetValue) {
+    for (var entry in map.entries) {
+      if (entry.value == targetValue) {
+        return entry.key;
+      }
+    }
+    return ""; // Return an empty string (or null) if the value is not found
+  }
+
+
 
   @override
   void initState() {
     super.initState();
     _selectedDueDate = widget.item.date;
     _itemNameController.text = widget.item.name;
+    print("BURA BAK BURA FAKO ESKI VALLUE DİYE DÜSÜNÜYORUM ${_itemNameController.text}");
+
+    itemName = widget.item.name;
+    targetValue = itemName;
     _descriptionController.text = widget.item.description ?? "";
+     foundKey = findKeyByValue(Globals.taskKeysByName, targetValue);
+     taskKey = Globals.taskKeysByName[_itemNameController.text];
+    print("BURA BAK BURA FAKO ESKI VALLUE DİYE DÜSÜNÜYORUM ${Globals.taskKeysByName[_itemNameController.text]}");
   }
 
   @override
@@ -773,14 +807,63 @@ class _EditItemScreenState extends State<EditItemScreen> {
             _buildDescriptionField(),
             SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 final editedItem = Item(
                   name: _itemNameController.text,
                   description: _descriptionController.text,
                   date: _selectedDueDate,
                 );
-                Navigator.pop(context, editedItem);
+
+                try {
+                  // Get the current authenticated user
+                  User? user = FirebaseAuth.instance.currentUser;
+
+                  if (user != null) {
+                    final firebaseRef = FirebaseDatabase(
+                      databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
+                    ).reference();
+
+                    print("OLD ITEM NAME I GUESS $itemName");
+
+                    DatabaseReference userTaskReference =
+                    firebaseRef.child('users').child(user.uid).child(Globals.taskKeysByName[itemName]!);
+
+                    // Create a map for the new task
+                    Map<String, dynamic> newTaskData = {
+                      "name": editedItem.name,
+                      "description": editedItem.description ?? "",
+                      "date": editedItem.date.toUtc().toIso8601String(),
+                    };
+
+                    await userTaskReference.set(newTaskData);
+
+                  
+                    // *************************
+                    for (var itemList in Globals.itemsList) {
+                      try {
+                        // Find the item with the current name
+                        var item = itemList.firstWhere((item) => item.name == itemName);
+
+                        // Update the name of the found item
+                        item.name = editedItem.name;
+                        await Globals.fetchDataFromDatabase();
+                        // If you want to update the name in the database, you'll need to implement that logic here
+
+                        break; // Break the loop once the item is found and updated
+                      } catch (e) {
+                        // Item with the given name not found in the current list
+                      }
+                    }
+                  }
+                } catch (e) {
+                  print("Error during database update: $e");
+                  // Handle error if needed
+                }
+
+                // Pop back to the first screen
+                Navigator.popUntil(context, (route) => route.isFirst);
               },
+
               child: Text('Save Changes'),
             ),
           ],
