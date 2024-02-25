@@ -1,5 +1,6 @@
 import 'dart:core';
 import 'dart:math';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
@@ -18,9 +19,9 @@ class EditKurumsalItemScreen extends StatefulWidget {
 
 class _EditKurumsalItemScreenState extends State<EditKurumsalItemScreen> with RouteAware {
   DateTime _selectedDueDate = DateTime.now();
-  TextEditingController _itemNameController = TextEditingController();
-  TextEditingController _descriptionController = TextEditingController();
-  TextEditingController _personController = TextEditingController();
+  final TextEditingController _itemNameController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _personController = TextEditingController();
   late String itemName;
   late String keyValue;
   late String targetValue;
@@ -41,7 +42,7 @@ class _EditKurumsalItemScreenState extends State<EditKurumsalItemScreen> with Ro
     super.initState();
     _selectedDueDate = widget.kurumsalItem.date;
     _itemNameController.text = widget.kurumsalItem.name;
-    _personController.text = widget.kurumsalItem.person;
+    _personController.text = widget.kurumsalItem.username;
     itemName = widget.kurumsalItem.name;
     targetValue = itemName;
     _descriptionController.text = widget.kurumsalItem.description ?? "";
@@ -53,7 +54,7 @@ class _EditKurumsalItemScreenState extends State<EditKurumsalItemScreen> with Ro
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Edit Kurumsal Item'),
+        title: const Text('Edit Kurumsal Item'),
         backgroundColor: Colors.grey,
         elevation: 4,
         shape: UnderlineInputBorder(),
@@ -61,74 +62,126 @@ class _EditKurumsalItemScreenState extends State<EditKurumsalItemScreen> with Ro
       body: CustomPaint(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildDueDateSelector(),
-              SizedBox(height: 16),
-              _buildItemNameField(),
-              SizedBox(height: 16),
-              _buildPersonField(),
-              SizedBox(height: 16),
-              _buildDescriptionField(),
-              SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () async {
-                  final editedItem = KurumsalItem(
-                    name: _itemNameController.text,
-                    description: _descriptionController.text,
-                    date: _selectedDueDate,
-                    person: _personController.text,
-                  );
-
-                  try {
-                    User? user = FirebaseAuth.instance.currentUser;
-
-                    if (user != null) {
-                      final firebaseRef = FirebaseDatabase(
-                        databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
-                      ).reference();
-
-                      DatabaseReference userTaskReference =
-                      firebaseRef.child('users').child(user.uid).child(Globals.taskKeysByName[itemName]!);
-
-                      Map<String, dynamic> newTaskData = {
-                        "name": editedItem.name,
-                        "description": editedItem.description ?? "",
-                        "date": editedItem.date.toUtc().toIso8601String(),
-                        "person": editedItem.person,
-                      };
-
-                      await userTaskReference.set(newTaskData);
-
-                      for (var itemList in Globals.itemsList) {
-                        try {
-                          var item = itemList.firstWhere((item) => item.name == itemName);
-                          item.name = editedItem.name;
-                          await Globals.fetchDataFromDatabase();
-                          break;
-                        } catch (e) {
-                          // Item with the given name not found in the current list
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildDueDateSelector(),
+                const SizedBox(height: 16),
+                _buildItemNameField(),
+                const SizedBox(height: 16),
+                _buildPersonField(),
+                const SizedBox(height: 16),
+                _buildDescriptionField(),
+                const  SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () async {
+                    final editedItem = KurumsalItem(
+                      name: _itemNameController.text,
+                      description: _descriptionController.text,
+                      date: _selectedDueDate,
+                      username: _personController.text,
+                    );
+            
+                    try {
+                      // Get the current authenticated user
+                      User? user = FirebaseAuth.instance.currentUser;
+            
+                      if (user != null) {
+                        final firebaseRef = FirebaseDatabase(
+                          databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
+                        ).reference();
+            
+                        // Update Realtime Database
+                        DatabaseReference userTaskReference = firebaseRef
+                            .child('users')
+                            .child(user.uid)
+                            .child("tasks")
+                            .child(Globals.taskKeysByName[itemName]!);
+            
+                        // Create a map for the new task
+                        Map<String, dynamic> newTaskData = {
+                          "name": editedItem.name,
+                          "description": editedItem.description ?? "",
+                          "date": editedItem.date.toUtc().toIso8601String(),
+                        };
+            
+                        await userTaskReference.set(newTaskData);
+            
+                        // Update Cloud Firestore
+                        final firestore = FirebaseFirestore.instance;
+                        String invitationCode = await _getInvitationCodeFromDatabase(user.uid);
+                        String kurumName = await _getKurumNameFromDatabase(user.uid);
+                        String documentName = " $kurumName - $invitationCode ";
+            
+                        QuerySnapshot querySnapshot = await firestore
+                            .collection('kurumlar')
+                            .where(FieldPath.documentId, isEqualTo: documentName)
+                            .get();
+            
+                        for (QueryDocumentSnapshot document in querySnapshot.docs) {
+                          List tasksArray = document['tasks'];
+            
+                          for (int i = 0; i < tasksArray.length; i++) {
+                            if (tasksArray[i]['name'] == itemName) {
+                              // Update the name, description, and date in the tasks array
+                              tasksArray[i]['name'] = editedItem.name;
+                              tasksArray[i]['description'] = editedItem.description ?? "";
+                              tasksArray[i]['date'] = editedItem.date.toUtc().toIso8601String();
+            
+                              // Update the Firestore document with the modified tasks array
+                              await firestore.collection('kurumlar').doc(document.id).update({
+                                'tasks': tasksArray,
+                              });
+            
+                              break; // Break the loop once the item is found and updated
+                            }
+                          }
+                        }
+            
+                        // *************************
+                        for (var itemList in Globals.itemsList) {
+                          try {
+                            // Find the item with the current name
+                            var item = itemList.firstWhere((item) => item.name == itemName);
+            
+                            // Update the name of the found item
+                            item.name = editedItem.name;
+                            Globals globals = Globals();
+            
+                            // Call the method fetchKurumsalItemsFromDatabase()
+                            await globals.fetchKurumsalItemsFromDatabase();
+            
+            
+                            // If you want to update the name in the database, you'll need to implement that logic here
+            
+                            break; // Break the loop once the item is found and updated
+                          } catch (e) {
+                            // Item with the given name not found in the current list
+                          }
                         }
                       }
+                    } catch (e) {
+                      print("Error during database update: $e");
+                      // Handle error if needed
                     }
-                  } catch (e) {
-                    print("Error during database update: $e");
-                  }
+            
+                    Navigator.pop(context);
+                    Navigator.pop(context);
 
-                  Navigator.popUntil(context, (route) => route.isFirst);
-                },
-                style: ElevatedButton.styleFrom(
-                  elevation: 5,
-                  foregroundColor: Colors.lightGreen[200],
-                  backgroundColor: Colors.grey,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
+                  },
+                  style: ElevatedButton.styleFrom(
+                    elevation: 5,
+                    foregroundColor: Colors.lightGreen[200],
+                    backgroundColor: Colors.grey,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
                   ),
+                  child:const Text('Save Changes'),
                 ),
-                child: Text('Save Changes'),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -138,13 +191,13 @@ class _EditKurumsalItemScreenState extends State<EditKurumsalItemScreen> with Ro
   Widget _buildDueDateSelector() {
     return Row(
       children: [
-        Text(
+        const  Text(
           'Due Date:',
           style: TextStyle(
             color: Colors.black,
           ),
         ),
-        SizedBox(width: 16),
+        const SizedBox(width: 16),
         TextButton(
           onPressed: () async {
             final pickedDate = await showDatePicker(
@@ -160,11 +213,11 @@ class _EditKurumsalItemScreenState extends State<EditKurumsalItemScreen> with Ro
             }
           },
           style: TextButton.styleFrom(
-            primary: Colors.grey[400],
+            foregroundColor: Colors.grey[400],
           ),
           child: Text(
             '${_selectedDueDate.day}/${_selectedDueDate.month}/${_selectedDueDate.year}',
-            style: TextStyle(color: Colors.grey),
+            style:const TextStyle(color: Colors.grey),
           ),
         ),
       ],
@@ -173,12 +226,12 @@ class _EditKurumsalItemScreenState extends State<EditKurumsalItemScreen> with Ro
 
   Widget _buildItemNameField() {
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 10),
+      margin:const EdgeInsets.symmetric(vertical: 10),
       child: TextField(
         controller: _itemNameController,
         decoration: InputDecoration(
           labelText: 'Item Name',
-          labelStyle: TextStyle(
+          labelStyle:const TextStyle(
             color: Colors.black,
           ),
           focusedBorder: OutlineInputBorder(
@@ -196,12 +249,12 @@ class _EditKurumsalItemScreenState extends State<EditKurumsalItemScreen> with Ro
 
   Widget _buildPersonField() {
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 10),
+      margin:const EdgeInsets.symmetric(vertical: 10),
       child: TextField(
         controller: _personController,
         decoration: InputDecoration(
           labelText: 'Person',
-          labelStyle: TextStyle(
+          labelStyle:const TextStyle(
             color: Colors.black,
           ),
           focusedBorder: OutlineInputBorder(
@@ -219,13 +272,13 @@ class _EditKurumsalItemScreenState extends State<EditKurumsalItemScreen> with Ro
 
   Widget _buildDescriptionField() {
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 10),
+      margin: const EdgeInsets.symmetric(vertical: 10),
       child: TextField(
         controller: _descriptionController,
         maxLines: 3,
         decoration: InputDecoration(
           labelText: 'Description',
-          labelStyle: TextStyle(
+          labelStyle: const TextStyle(
             color: Colors.black,
           ),
           focusedBorder: OutlineInputBorder(
@@ -239,5 +292,34 @@ class _EditKurumsalItemScreenState extends State<EditKurumsalItemScreen> with Ro
         ),
       ),
     );
+  }
+  // Helper method to get 'invitationCode' from Realtime Database
+  Future<String> _getInvitationCodeFromDatabase(String userId) async {
+    DatabaseReference firebaseRef = FirebaseDatabase(
+      databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
+    ).reference();
+
+    // Reference to 'invitationCode' field in Realtime Database
+    DatabaseReference userTaskReference = firebaseRef.child('users').child(userId).child('kurum').child('invitationCode');
+
+    // Get the 'invitationCode' value
+    DataSnapshot snapshot = await userTaskReference.get();
+
+    return snapshot.value.toString();
+  }
+
+// Helper method to get 'name' from Realtime Database
+  Future<String> _getKurumNameFromDatabase(String userId) async {
+    DatabaseReference firebaseRef = FirebaseDatabase(
+      databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
+    ).reference();
+
+    // Reference to 'invitationCode' field in Realtime Database
+    DatabaseReference userTaskReference = firebaseRef.child('users').child(userId).child('kurum').child('name');
+
+    // Get the 'invitationCode' value
+    DataSnapshot snapshot = await userTaskReference.get();
+
+    return snapshot.value.toString();
   }
 }

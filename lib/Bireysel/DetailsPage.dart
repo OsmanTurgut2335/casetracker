@@ -38,7 +38,7 @@ class _DetailsPageState extends State<DetailsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Detay Sayfası'),
+        title: const Text('Detay Sayfası'),
         backgroundColor: Colors.grey,
         elevation: 4,
         shape: UnderlineInputBorder(),
@@ -47,80 +47,83 @@ class _DetailsPageState extends State<DetailsPage> {
         painter: MyCustomPainter(),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Column(
-
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              SizedBox(height: 150,),
-              _buildItemNameField('', _item.name),
-              SizedBox(height: 30),
-              _buildDescriptionField('', _item.description),
-              SizedBox(height: 30),
-              Text('Tarih: ${_formatDate(_item.date)}',
-              style: TextStyle(
-                fontSize: 20
+          child: SingleChildScrollView( // Wrap your Column with SingleChildScrollView
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+              const SizedBox(height: 150,),
+            _buildItemNameField('', _item.name),
+            const SizedBox(height: 30),
+            _buildDescriptionField('', _item.description),
+            const SizedBox(height: 30),
+            Text('Tarih: ${_formatDate(_item.date)}',
+              style: const TextStyle(
+                  fontSize: 20
               ),
-              ),
-              SizedBox(height: 50),
-              ElevatedButton(
-                onPressed: () {
-                  _navigateToEditItemScreen(context);
-                },
-                style: ElevatedButton.styleFrom(
-                  elevation: 5,
-                  foregroundColor: Colors.limeAccent,
-                  backgroundColor: Colors.grey,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
+            ),
+            const SizedBox(height: 50),
+            ElevatedButton(
+              onPressed: () {
+                _navigateToEditItemScreen(context);
+              },
+              style: ElevatedButton.styleFrom(
+                elevation: 5,
+                foregroundColor: Colors.limeAccent,
+                backgroundColor: Colors.grey,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
                 ),
-                child: Text('Edit'),
               ),
-              ElevatedButton(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return AlertDialog(
-                        title: Text('Kaldır'),
-                        content: Text('Bunu kaldırmak istediğinizden emin misiniz?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            child: Text('İptal'),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.popUntil(
-                                context,
-                                    (route) => route.isFirst,
-                              );
-                              Navigator.pop(context);
+              child: const Text('Edit'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: const Text('Kaldır'),
+                      content: const Text('Bunu kaldırmak istediğinizden emin misiniz?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          child: const Text('İptal'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            widget.onRemove();
+                            Navigator.pop(context);
+                            Navigator.pop(context);
 
-                            },
-                            child: Text('Kaldır'),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  elevation: 5,
-                  foregroundColor: Colors.limeAccent,
-                  backgroundColor: Colors.grey,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
+
+                          },
+                          child: const Text('Kaldır'),
+                        ),
+                      ],
+                    );
+                  },
+                );
+
+
+              },
+              style: ElevatedButton.styleFrom(
+                elevation: 5,
+                foregroundColor: Colors.limeAccent,
+                backgroundColor: Colors.grey,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10.0),
                 ),
-                child: Text('Kaldır'),
               ),
+              child: const Text('Kaldır'),
+            ),
+
             ],
           ),
         ),
       ),
+    )
     );
   }
   Widget _buildItemNameField(String label, String? value) {
@@ -130,7 +133,7 @@ class _DetailsPageState extends State<DetailsPage> {
               textAlign: TextAlign.center,
               readOnly: true,
               controller: TextEditingController(text: value),
-              style: TextStyle(
+              style: const TextStyle(
                 backgroundColor: Colors.transparent, // Set background color to be barely visible
                 fontSize: 18.0,
               ),
@@ -139,7 +142,7 @@ class _DetailsPageState extends State<DetailsPage> {
                 filled: true,
                 fillColor: Colors.brown[100], // Set a slightly visible background color
                 enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.transparent),
+                  borderSide: const BorderSide(color: Colors.transparent),
                   borderRadius: BorderRadius.circular(10.0),
                 ),
                 focusedBorder: OutlineInputBorder(
@@ -160,12 +163,12 @@ class _DetailsPageState extends State<DetailsPage> {
             backgroundColor: Colors.grey[200],
             fontSize: 20.0,  // Increase the font size if needed
           ),
-          maxLines: 9,  // Increase the maxLines property to make the text field taller
+          maxLines: 7,  // Increase the maxLines property to make the text field taller
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.grey[200],
             enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.transparent),
+              borderSide: const BorderSide(color: Colors.transparent),
               borderRadius: BorderRadius.circular(10.0),
             ),
             focusedBorder: OutlineInputBorder(
@@ -183,7 +186,10 @@ class _DetailsPageState extends State<DetailsPage> {
       MaterialPageRoute<Item>(
         builder: (context) => EditItemScreen(item: _item),
       ),
-    );
+    ).then((_) {
+      Navigator.pop(context); // Remove the current route from the stack
+    });
+
     if (editedItem != null) {
       setState(() {
         _item.name = editedItem.name;

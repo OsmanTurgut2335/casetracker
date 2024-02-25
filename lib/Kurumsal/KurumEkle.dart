@@ -71,7 +71,7 @@ class _KurumEkleScreenState extends State<KurumEkleScreen> {
 
         Map<String, dynamic> newMember = {
           'name': newMemberName,
-          
+          'kurucuÜye' : 'evet',
           // Add more fields as needed
         };
 
@@ -168,7 +168,7 @@ class _KurumEkleScreenState extends State<KurumEkleScreen> {
               child: Container(
                 width: 100,
                 height: 100,
-                decoration: BoxDecoration(
+                decoration:const  BoxDecoration(
                   color: Colors.grey,
                   shape: BoxShape.circle,
                 ),
@@ -181,27 +181,27 @@ class _KurumEkleScreenState extends State<KurumEkleScreen> {
                     fit: BoxFit.cover,
                   ),
                 )
-                    : Icon(
+                    : const Icon(
                   Icons.add_a_photo,
                   size: 40,
                 ),
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             TextField(
               controller: _kurumNameController,
               maxLength: 50,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Kurum Name',
                 border: OutlineInputBorder(),
               ),
             ),
-            SizedBox(height: 20),
+            const  SizedBox(height: 20),
             ElevatedButton(
               onPressed: isButtonEnabled ? _onKurumEkleButtonPressed : null,
               child: Text('Kurum Ekle'),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
 
           ],
         ),

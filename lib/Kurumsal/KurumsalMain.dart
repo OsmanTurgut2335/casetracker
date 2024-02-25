@@ -1,9 +1,14 @@
 import 'dart:core';
+import 'dart:ffi';
 import 'package:casetracker/Kurumsal/KurumsalDetails.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:intl/intl.dart';
+import 'package:share/share.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:firebase_core/firebase_core.dart';
 import '../Bireysel/DetailsPage.dart';
@@ -29,18 +34,18 @@ void main() {
 
 extension DateTimeExtension on DateTime {
   bool isSameDate(DateTime other) {
-    return this.year == other.year && this.month == other.month && this.day == other.day;
+    return year == other.year && month == other.month && day == other.day;
   }
 }
 
 class Task {
   late String details;
   late DateTime date;
-
   Task({required this.details, required this.date});
 }
-
 class MyApp extends StatelessWidget {
+
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -48,17 +53,17 @@ class MyApp extends StatelessWidget {
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.active) {
-            User? user = snapshot.data as User?;
+            User? user = snapshot.data;
             if (user == null) {
               // User not signed in, show the login screen
               return LoginScreen();
             } else {
               // User is signed in, show the main screen
-              return MyHomePage(user: user);
+              return MyHomePage(user: user, documentName: '',);
             }
           } else {
             // Show a loading indicator while checking authentication state
-            return CircularProgressIndicator();
+            return const CircularProgressIndicator();
           }
         },
       ),
@@ -67,180 +72,149 @@ class MyApp extends StatelessWidget {
 }
 
 
+
+
 class MyHomePage extends StatefulWidget {
   final User? user; // Change the type to User?
+  final String documentName; // Add this line
 
-  MyHomePage({this.user});
+  MyHomePage({this.user, required this.documentName});
 
   @override
   _MyHomePageState createState() => _MyHomePageState();
+
+
+
 }
 
 
+class Event {
+  final String title;
+
+  const Event(this.title);
+
+  @override
+  String toString() => title;
+}
 class _MyHomePageState extends State<MyHomePage> {
-  PageController _pageController = PageController();
+  late Stream<DocumentSnapshot> _stream;
+  late Widget _floatingActionButton;
+
+  final PageController _pageController = PageController();
   int _currentPage = 0;
   Map<DateTime, List<Task>> tasksMap = {};
   List<KurumsalItem> filteredItems = [];
-  late ScrollController _scrollController;
   DateTime _selectedDay = DateTime.now();
+  late String username;
+  Map<DateTime, List<Task>> tasksMapForMonth = {};
+  bool isFoundingMember = false;
+  final firebaseRef = FirebaseDatabase(
+    databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
+  ).reference();
 
   @override
   void initState() {
     super.initState();
     _fetchKurumsalItemsFromDatabase();
+
   }
-/*
-  void _fetchDataFromDatabase() async {
-    final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final firebaseRef = FirebaseDatabase(
-        databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
-      ).reference();
 
-      // Update the reference to include the user's UID
-      DatabaseReference kurumsalReference = firebaseRef.child("users").child(user.uid).child("kurum");
-      DatabaseReference userReferenceForList = firebaseRef.child("users");
-
-      // Read the invitation code from the database
-      DataSnapshot dataSnapshot = await kurumsalReference.get();
-      Map<dynamic, dynamic>? values = dataSnapshot.value as Map<dynamic, dynamic>?;
-
-      if (values != null && values.containsKey("invitationCode")) {
-        String invitationCode = values["invitationCode"] as String;
-        //print("SERDAR AAAAAAAAAĞ");
-
-          QuerySnapshot kurumlarSnapshot =
-          await _firestore.collection('kurumlar').get();
-
-          for (QueryDocumentSnapshot kurumDocument in kurumlarSnapshot.docs) {
-            String kurumDocumentName = kurumDocument.id;
-            print("SERDAAAAR $kurumDocumentName   $invitationCode");
-
-          if(kurumDocumentName.contains(invitationCode)){
-              print("SERDAR AAAAAAAAAĞ");
-              List<dynamic>? members = values["members"];
-
-              if (members != null) {
-                for (var member in members) {
-                  String memberId = member['name'];
-
-                  Globals.kurumsMembersList.add(memberId);
-
-                  // Find tasks for each member
-                  DatabaseReference userReferenceForList = firebaseRef.child("users").child(memberId).child("tasks");
-
-                  DataSnapshot userTasksSnapshot = await userReferenceForList.get();
-                  Map<dynamic, dynamic>? userTasksData = userTasksSnapshot.value as Map<dynamic, dynamic>?;
-
-                  if (userTasksData != null) {
-                    Globals.itemsList[0].clear();
-                    Globals.taskKeysByName.clear();
-                    userTasksData.forEach((key, value) {
-                      final item = Item(
-                        name: value['name'],
-                        description: value['description'],
-                        date: DateTime.parse(value['date']),
-                      );
-                      Globals.taskKeysByName[item.name] = key;
-                      Globals.itemsList[0].add(item);
-                    });
-                  }
-                }
-
-                setState(() {
-                  // Update the UI or perform any additional actions
-                });
-              }
-            }
-            }
-
-          }
-   //********************
-
-     /* final snapshot = await kurumsalReference.get();
-
-      if (snapshot.value is Map<dynamic, dynamic>) {
-        final Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
-
-        Globals.itemsList[0].clear(); // Change here
-        Globals.taskKeysByName.clear();
-        data.forEach((key, value) {
-          final item = Item(
-            name: value['name'],
-            description: value['description'],
-            date: DateTime.parse(value['date']),
-          );
-          Globals.taskKeysByName[item.name] = key;
-
-          Globals.itemsList[0].add(item);
-        });
-
-        setState(() {});
-      }
-      */
-    }
-  }
-*/
-
-*/
 
   void _fetchKurumsalItemsFromDatabase() async {
     // Clear the existing kurumsalItemsList
     Globals.kurumsalItemsList[0].clear();
 
-    final FirebaseDatabase firebaseDatabase = FirebaseDatabase.instance;
     User? user = FirebaseAuth.instance.currentUser;
 
     if (user != null) {
-      final DatabaseReference firebaseRef = firebaseDatabase.reference();
 
-      // Update the reference to include the user's UID
-      DatabaseReference kurumsalReference = firebaseRef.child("users").child(user.uid).child("kurum");
+      // Access Firestore
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-      // Read the invitation code from the database
-      DataSnapshot dataSnapshot = await kurumsalReference.get();
-      Map<dynamic, dynamic>? values = dataSnapshot.value as Map<dynamic, dynamic>?;
-      print("KANKA VALUES $values");
-      if (values != null && values.containsKey("invitationCode")) {
-        String invitationCode = values["invitationCode"] as String;
+      try {
+        // Get the 'invitationCode' from Realtime Database
+        String invitationCode = await _getInvitationCodeFromDatabase(user.uid);
+        String kurumName = await _getKurumNameFromDatabase(user.uid);
+        String documentName = " $kurumName - $invitationCode ";
+        // Find the document in 'kurumlar' collection where 'name' contains the invitation code
 
-        // Get the members array
-        List<dynamic>? members = values["members"];
 
-        if (members != null) {
-          for (var member in members) {
-            String memberId = member['name'];
+        QuerySnapshot querySnapshot = await firestore
+            .collection('kurumlar')
+            .where(FieldPath.documentId, isEqualTo: documentName)
+            .get();
 
-            // Find tasks for each member
-            DatabaseReference userReferenceForList = firebaseRef.child("users").child(memberId).child("tasks");
+// Check if any document is found
+        if (querySnapshot.docs.isNotEmpty) {
+          // Access the first document's data
+          Map<String, dynamic> data = querySnapshot.docs.first.data() as Map<String, dynamic>;
 
-            DataSnapshot userTasksSnapshot = await userReferenceForList.get();
-            Map<dynamic, dynamic>? userTasksData = userTasksSnapshot.value as Map<dynamic, dynamic>?;
+          // Get the 'tasks' array from the document
+          List<dynamic>? tasks = data['tasks'];
 
-            if (userTasksData != null) {
-              userTasksData.forEach((key, value) {
-                final kurumsalItem = KurumsalItem(
-                  name: value['name'],
-                  description: value['description'],
-                  date: DateTime.parse(value['date']),
-                  person: memberId,
-                );
-                Globals.taskKeysByName[kurumsalItem.name] = key;
-                Globals.kurumsalItemsList[0].add(kurumsalItem);
-              });
+          if (tasks != null) {
+
+            for (var taskData in tasks) {
+              // Extract data from each task item
+              String name = taskData['name'];
+              String? description = taskData['description'];
+              DateTime date = DateTime.parse(taskData['date']);
+               username = taskData['username'];
+              print("YARRRRRRRRRAK");
+              // Create a KurumsalItem and add it to the kurumsalItemsList
+              KurumsalItem kurumsalItem = KurumsalItem(
+                name: name,
+                description: description,
+                date: date,
+                username: username,
+              );
+
+
+              // Add the KurumsalItem to the kurumsalItemsList at the determined index
+              Globals.kurumsalItemsList[0].add(kurumsalItem);
             }
+            setState(() {});
+            // Now kurumsalItemsList should contain the items from the 'tasks' array
           }
-
-          setState(() {
-            // Update the UI or perform any additional actions
-          });
+        } else {
+          // Handle the case where the document is not found
+          print('Document not found with the specified value.');
         }
+
+      } catch (e) {
+        print("Error: $e");
       }
     }
   }
+// Helper method to get 'invitationCode' from Realtime Database
+  Future<String> _getInvitationCodeFromDatabase(String userId) async {
+    DatabaseReference firebaseRef = FirebaseDatabase(
+      databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
+    ).reference();
 
+    // Reference to 'invitationCode' field in Realtime Database
+    DatabaseReference userTaskReference = firebaseRef.child('users').child(userId).child('kurum').child('invitationCode');
+
+    // Get the 'invitationCode' value
+    DataSnapshot snapshot = await userTaskReference.get();
+
+    return snapshot.value.toString();
+  }
+
+  // Helper method to get 'name' from Realtime Database
+  Future<String> _getKurumNameFromDatabase(String userId) async {
+    DatabaseReference firebaseRef = FirebaseDatabase(
+      databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
+    ).reference();
+
+    // Reference to 'invitationCode' field in Realtime Database
+    DatabaseReference userTaskReference = firebaseRef.child('users').child(userId).child('kurum').child('name');
+
+    // Get the 'invitationCode' value
+    DataSnapshot snapshot = await userTaskReference.get();
+
+    return snapshot.value.toString();
+  }
 
 
   void _signOut() async {
@@ -251,11 +225,15 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+
+
   @override
   Widget build(BuildContext context) {
+    String yarrak = widget.documentName;
+
     return WillPopScope(
       onWillPop: () async {
-
+        _fetchKurumsalItemsFromDatabase;
         setState(() {
           Globals.kurumsalItemsList[0].sort((a, b) => a.date.compareTo(b.date));
         });
@@ -264,8 +242,7 @@ class _MyHomePageState extends State<MyHomePage> {
       child: Scaffold(
         backgroundColor: Colors.grey[350],
         appBar: AppBar(
-
-          title: Text("Kurumsal Ekranı"),
+          title: const Text("Kurumsal Ekranı"),
           actions: [
             PopupMenuButton<String>(
               onSelected: (value) {
@@ -273,34 +250,36 @@ class _MyHomePageState extends State<MyHomePage> {
                   _signOut();
                 } else if (value == 'showInvitationCode') {
                   _showInvitationCode();
+                } else if (value == 'shareInvitationCode') {
+                  _shareInvitationCode();
                 }
               },
               itemBuilder: (BuildContext context) {
                 return [
-                  PopupMenuItem(
+                  const PopupMenuItem(
                     value: 'signOut',
                     child: Text('Sign Out'),
                   ),
-                  PopupMenuItem(
+                  const PopupMenuItem(
                     value: 'showInvitationCode',
                     child: Text('Show Invitation Code'),
+                  ),
+                  const PopupMenuItem(
+                    value: 'shareInvitationCode',
+                    child: Text('Share Invitation Code'),
                   ),
                 ];
               },
             ),
           ],
-
-          backgroundColor: Colors.grey, // Set app bar background color
-          elevation: 4, // Set the elevation for a shadow effect
-          shape: UnderlineInputBorder(
-
-          ),
-          // ... other properties
+          backgroundColor: Colors.grey,
+          elevation: 4,
+          shape: const UnderlineInputBorder(),
         ),
         body: Column(
           children: [
             _buildTabBar(),
-            _currentPage == 0 ? _buildSearchBar() : SizedBox(),
+            _currentPage == 0 ? _buildSearchBar() : const SizedBox(),
             Expanded(
               child: PageView(
                 controller: _pageController,
@@ -314,7 +293,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   });
                 },
                 children: [
-                  Expanded(
+                  Container(
                     child: _buildPage(filteredItems.isNotEmpty ? filteredItems : Globals.kurumsalItemsList[0]),
                   ),
                   _buildCalendarPage(),
@@ -323,15 +302,50 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ],
         ),
-        floatingActionButton:
-        _currentPage == 0 ? _buildFloatingButton(context) : null,
+        floatingActionButton: _currentPage == 0
+            ? StreamBuilder<DocumentSnapshot>(
+          stream: yarrak.isNotEmpty ? FirebaseFirestore.instance.collection('kurumlar').doc(yarrak).snapshots() : null,
+          builder: (BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const CircularProgressIndicator();
+            } else if (snapshot.hasError) {
+              return Text('Error: ${snapshot.error}');
+            } else {
+              if (snapshot.hasData && snapshot.data!.exists) {
+                final Map<String, dynamic>? data = snapshot.data!.data() as Map<String, dynamic>?;
+
+                if (data != null && data.containsKey('members')) {
+                  final members = data['members'] as List<dynamic>;
+                  if (members.isNotEmpty) {
+                    final firstMember = members[0] as Map<String, dynamic>;
+                    final name = firstMember['name'] as String;
+                    if (name == FirebaseAuth.instance.currentUser?.uid) {
+                      return FloatingActionButton(
+                        onPressed: () async {
+                          final newItem = await _navigateToNewItemScreen(context);
+                          _addItem(newItem as KurumsalItem);
+                        },
+                        backgroundColor: Colors.blue,
+                        child: const Icon(Icons.add),
+                      );
+                    }
+                  }
+                }
+              } else {
+                print("DAYAAAN BU BADİRELERDE GEÇİCİ BAK İNAN $yarrak");
+              }
+              return const SizedBox();
+            }
+          },
+        )
+            : null,
       ),
     );
   }
 
 
   Widget _buildTabBar() {
-    return Container(
+    return SizedBox(
       height: 50,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -357,7 +371,7 @@ class _MyHomePageState extends State<MyHomePage> {
           style: TextStyle(
             color: _currentPage == index ? Colors.white : Colors.black,
             fontWeight: FontWeight.bold,
-            shadows: [
+            shadows: const [
               Shadow(
                 color: Colors.grey,
                 offset: Offset(2, 2), // Set the shadow offset for a 3D effect
@@ -378,65 +392,80 @@ class _MyHomePageState extends State<MyHomePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: _pullRefresh,
-            child: SingleChildScrollView(
-              physics: AlwaysScrollableScrollPhysics(),
-              child: Column(
-                children: [
-                  for (final item in items)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 5.0),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8.0),
-                          border: Border.all(
-                            color: Colors.lime[400] ?? Colors.green,
-                            width: 4.0, // Set the border width (you can adjust this value)
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey[600] ?? Colors.grey,
-                              spreadRadius: 1,
-                              blurRadius: 4,
-                            ),
-                          ],
+        RefreshIndicator(
+          onRefresh: _pullRefresh,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              children: [
+                for (final item in items)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 5.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8.0),
+                        border: Border.all(
+                          color: Colors.lime[400] ?? Colors.green,
+                          width: 4.0, // Set the border width (you can adjust this value)
                         ),
-                        child: ListTile(
-                          title: Text(
-                            '${item.name} - ${_formatDate(item.date)}',
-                            style: TextStyle(
-                              color: Colors.black,
-                            ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey[600] ?? Colors.grey,
+                            spreadRadius: 1,
+                            blurRadius: 4,
                           ),
-                          subtitle: Text(
-                            _calculateDaysLeft(item.date) == null ? 'Expired' : 'Active',
-                            style: TextStyle(
-                              color: Colors.black,
-                            ),
+                        ],
+                      ),
+                      child: ListTile(
+                        title: Text(
+                          '${item.name} - ${_formatDate(item.date)}',
+                          style: const TextStyle(
+                            color: Colors.black,
                           ),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => DetailsPage(
-                                  title: "Screen ${_currentPage + 1}",
-                                  item: item.name,
-                                  description: item.description ?? "",
-                                  itemDate: item.date,
-                                  onRemove: () {
-                                    _removeItem(item);
-                                  },
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _calculateDaysLeft(item.date),
+                              style: const TextStyle(
+                                color: Colors.black,
+                              ),
+                            ),
+                            if (_calculateDaysLeft(item.date) != 'Expired')
+                              Text(
+                                'Görevli : ${item.username}',
+                                style: const TextStyle(
+                                  color: Colors.black,
                                 ),
                               ),
-                            );
-                          },
+                            // Add your additional subtext here
+                          ],
                         ),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => KurumsalDetailsPage(
+                                title: "Screen ${_currentPage + 1}",
+                                item: item.name,
+                                description: item.description ?? "",
+                                itemDate: item.date,
+                                username: item.username,
+                                onRemove: () {
+                                  _removeItem(item);
+                                },
+                                documentName: widget.documentName, // Pass it here
+                              ),
+                            ),
+                          );
+                        },
                       ),
+
+
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
           ),
         ),
@@ -448,12 +477,44 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
   Widget _buildCalendarPage() {
+    _fetchTasksForTheCurrentMonth();
+
+    Map<String, List<Event>> events = {};
+
+    tasksMapForMonth.forEach((date, tasks) {
+      String formattedDate = DateFormat("yyyy-MM-dd").format(date);
+      // Check if there is already an event for this date
+      if (!events.containsKey(formattedDate)) {
+        // If no event exists, create a new list with one event
+        events[formattedDate] = [];
+      }
+      // Filter out expired tasks
+      List<Task> nonExpiredTasks = tasks.where((task) => !task.date.isBefore(DateTime.now())).toList();
+      if (nonExpiredTasks.isNotEmpty) {
+        events[formattedDate]!.add(Event(tasks.first.details));
+      }
+    });
+
+    List<Event> getMyEvents(day) {
+      final DateFormat formatter = DateFormat("yyyy-MM-dd");
+      String formattedStr = formatter.format(day);
+      return events[formattedStr] ?? [];
+    }
+
     return Column(
       children: [
         TableCalendar(
           focusedDay: _selectedDay,
           firstDay: DateTime.utc(2020, 1, 1),
           lastDay: DateTime.utc(2030, 12, 31),
+          calendarStyle: const CalendarStyle(
+            markersAlignment: Alignment.bottomCenter,
+          ),
+          eventLoader: getMyEvents,
+          selectedDayPredicate: (day) {
+            // Check if the provided day is the same as the selected day
+            return isSameDay(_selectedDay, day);
+          },
           onDaySelected: (selectedDay, focusedDay) async {
             setState(() {
               _selectedDay = selectedDay;
@@ -462,7 +523,7 @@ class _MyHomePageState extends State<MyHomePage> {
             await _fetchTasksForSelectedDay(selectedDay);
           },
         ),
-        SizedBox(height: 16),
+        const SizedBox(height: 16),
         if (tasksMap[_selectedDay] != null && tasksMap[_selectedDay]!.isNotEmpty)
           Expanded(
             child: ListView(
@@ -471,68 +532,121 @@ class _MyHomePageState extends State<MyHomePage> {
                 for (final task in tasksMap[_selectedDay]!)
                   GestureDetector(
                     onTap: () async {
-                      setState(() async {
-                        // Get the current authenticated user
-                        User? user = FirebaseAuth.instance.currentUser;
+                      print("RABİA ALLAHINI SİKEYİM ${task.details}");
 
-                        // Print statement to check if user is null
-                        print("Current user: $user");
+                      // Access Firestore
+                      FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-                        if (user != null) {
-                          final firebaseRef = FirebaseDatabase(
-                            databaseURL:
-                            "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
-                          ).reference();
+                      try {
 
-                          String? taskKey = Globals.taskKeysByName[task.details];
+                        QuerySnapshot querySnapshot = await firestore
+                            .collection('kurumlar')
+                            .where(FieldPath.documentId, isEqualTo: widget.documentName)
+                            .get();
 
-                          // Update the reference to include the user's UID
-                          DatabaseReference userTaskReference = firebaseRef
-                              .child('users')
-                              .child(user.uid)
-                              .child(taskKey!);
-                          print("KANKAAAA $taskKey");
+// Check if any document is found
+                        if (querySnapshot.docs.isNotEmpty) {
+                          // Access the first document's data
+                          Map<String, dynamic> data = querySnapshot.docs.first.data() as Map<String, dynamic>;
 
-                          // Fetch the details of the task
-                          final snapshot = await userTaskReference.get();
+                          // Get the 'tasks' array from the document
+                          List<dynamic>? tasks = data['tasks'];
 
-                          // Check if the snapshot value is not null and is of the expected type
-                          if (snapshot.value is Map<dynamic, dynamic>?) {
-                            // Access the data from the snapshot
-                            Map<dynamic, dynamic>? taskData =
-                            snapshot.value as Map<dynamic, dynamic>?;
+                          if (tasks != null) {
 
-                            if (taskData != null) {
+                            for (var taskData in tasks) {
 
-                              KurumsalItem selectedKurumsalItem=(
-                              name: taskData['name'],
-                              description: taskData['description'],
-                              date: DateTime.parse(taskData['date']),
-                              person : taskData['person'],
-                              ) as KurumsalItem;
+                              // Extract data from each task item
+                              String name = taskData['name'];
+
+                              DateTime date = DateTime.parse(taskData['date']);
+
+                              if(task.details == name &&  task.date==date){
+                                String newUsername = taskData['username'];
+                                if(username == newUsername){
+                                  KurumsalItem item = KurumsalItem(name: name, date: date, username: username);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => KurumsalDetailsPage(
+
+                                        title: "Screen ${_currentPage + 1}",
+                                        item: name,
+                                        description: task.details ?? "",
+                                        itemDate: task.date,
+                                        username: newUsername,
+                                        onRemove: () {
+                                          _removeItem(item);
+                                        },
+                                        documentName: widget.documentName, // Pass it here
+                                      ),
+                                    ),
+                                  );
+                                }
+                                else{
+
+                                }
+
+                              }
 
 
-                              // Use the 'selectedItem' instance as needed
-
-                              // Navigate to the DetailsPage and pass the selected item
-                              _navigateToDetailsPage(selectedKurumsalItem);
                             }
+                            setState(() {});
+                            // Now kurumsalItemsList should contain the items from the 'tasks' array
                           }
+                        } else {
+                          // Handle the case where the document is not found
+                          print('Document not found with the specified value.');
                         }
-                      });
+
+                      } catch (e) {
+                        print("Error: $e");
+                      }
+
+                      /*
+                        Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => KurumsalDetailsPage(
+
+                            title: "Screen ${_currentPage + 1}",
+                            item: task.name,
+                            description: task.details ?? "",
+                            itemDate: task.date,
+                            username: item.username,
+                            onRemove: () {
+                              _removeItem(item);
+                            },
+                            documentName: widget.documentName, // Pass it here
+                          ),
+                        ),
+                      );*/
+
+                     // Fetch the current authenticated user
+                      User? user = FirebaseAuth.instance.currentUser;
+
+                      // Print statement to check if user is null
+                      print("Current user: $user");
+
+                      if (user != null) {
+                        String? taskKey = Globals.taskKeysByName[task.details];
+
+                        // Update the reference to include the user's UID
+                        DatabaseReference userTaskReference = firebaseRef
+                            .child('users')
+                            .child(user.uid)
+                            .child('tasks')
+                            .child(taskKey!);
+
+                        // Perform asynchronous work outside of setState
+                        _fetchAndUpdateState(userTaskReference);
+                      }
                     },
                     child: Container(
-                      margin: EdgeInsets.symmetric(vertical: 8.0),
+                      height: 50,
+                      margin: const EdgeInsets.symmetric(vertical: 8.0),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10.0),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.5),
-                            spreadRadius: 2,
-                            blurRadius: 5,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
+                        borderRadius: BorderRadius.circular(25.0), // Half of the height to make it round
                         gradient: LinearGradient(
                           colors: [
                             Colors.cyan[900] ?? Colors.cyan,
@@ -540,12 +654,15 @@ class _MyHomePageState extends State<MyHomePage> {
                           ],
                         ),
                       ),
-                      child: ListTile(
-                        title: Text(
-                          task.details,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(25.0), // Half of the height to make it round
+                        child: ListTile(
+                          title: Text(
+                            task.details,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -561,6 +678,39 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
 
+  Future<void> _fetchTasksForTheCurrentMonth() async {
+    // Clear tasksMap before populating it again
+    tasksMapForMonth.clear();
+
+    // Get the current date
+    DateTime currentDate = DateTime.now();
+
+    // Get the first day of the current month
+    DateTime firstDayOfMonth = DateTime(currentDate.year, currentDate.month, 1);
+
+    // Get the last day of the current month
+    DateTime lastDayOfMonth = DateTime(currentDate.year, currentDate.month + 1, 0);
+
+    // Iterate through all days in the month
+    for (DateTime date = firstDayOfMonth; date.isBefore(lastDayOfMonth.add(const Duration(days: 1))); date = date.add(const Duration(days: 1))) {
+      for (var items in Globals.kurumsalItemsList) {
+        for (var item in items) {
+          if (item.date.isSameDate(date)) {
+            tasksMapForMonth[date] = tasksMapForMonth[date] ?? [];
+
+            // Create a Task object with necessary details
+            Task task = Task(details: item.name, date: item.date);
+
+            // Add the Task object to the tasksMap
+            tasksMapForMonth[date]!.add(task);
+          }
+        }
+      }
+    }
+
+    setState(() {});
+  }
+
 
   Widget _buildSearchBar() {
     return Padding(
@@ -569,7 +719,7 @@ class _MyHomePageState extends State<MyHomePage> {
         onChanged: (value) {
           _filterItems(value);
         },
-        decoration: InputDecoration(
+        decoration:const  InputDecoration(
           hintText: 'Search...',
           prefixIcon: Icon(Icons.search),
         ),
@@ -586,26 +736,169 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void _addItem(KurumsalItem? kurumsalItem){
+    if (kurumsalItem != null) {
+      kurumsalItem.username = username;
+      Globals.kurumsalItemsList[0].add(kurumsalItem);
+      // Get the current authenticated user
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        DatabaseReference userTaskReference2 =
+        firebaseRef.child('users').child(user.uid).child("kurum");
+
+        userTaskReference2.get().then((DataSnapshot snapshot) {
+          if (snapshot.value != null && snapshot.value is Map<dynamic, dynamic>) {
+            Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
+
+            if (data.containsKey('invitationCode') &&
+                data.containsKey('name') &&
+                data['invitationCode'] is String &&
+                data['name'] is String) {
+              String invitationCode = data['invitationCode'] as String;
+              String name = data['name'] as String;
+              String result = ' $name - $invitationCode ';
+              CollectionReference kurumlarCollection =
+              FirebaseFirestore.instance.collection('kurumlar');
+
+              kurumlarCollection
+                  .where(FieldPath.documentId, isEqualTo: result)
+                  .get()
+                  .then((QuerySnapshot querySnapshot) {
+                if (querySnapshot.docs.isNotEmpty) {
+                  DocumentReference documentReference =
+                      querySnapshot.docs.first.reference;
+                  Map<String, dynamic> userData = {
+                    'username': username, // replace with actual username
+                    'name': kurumsalItem.name,
+                    'description': kurumsalItem.description,
+                    "date": kurumsalItem.date.toUtc().toIso8601String(),
+                  };
 
 
+                    documentReference.set({
+                      'tasks': FieldValue.arrayUnion([userData]),
+                    }, SetOptions(merge: true));
+                    print('Array field updated/created successfully!');
+
+                    // Add the item to user's tasks
+                    DatabaseReference userTaskReference =
+                    firebaseRef.child('users').child(user.uid).child('tasks');
+                    Map<String, dynamic> newTaskData = {
+                      "name": kurumsalItem.name,
+                      "description": kurumsalItem.description ?? "",
+                      "date": kurumsalItem.date.toUtc().toIso8601String(),
+                      "email": user.email
+                    };
+                    print("New task data: $newTaskData");
+                    DatabaseReference newTaskReference =
+                    userTaskReference.push();
+                    newTaskReference.set(newTaskData);
+                    Globals.taskKeysByName[kurumsalItem.name] = newTaskReference.key!;
+
+                } else {
+                  print('Document not found with the specified value.');
+                }
+              }).catchError((error) {
+                print("Error: $error");
+              });
+            }
+          } else {
+            print('Snapshot value is null or not a Map<dynamic, dynamic>');
+          }
+        }).catchError((error) {
+          print("Error: $error");
+        });
+      }
+
+    }
+
+  }
+
+  void _fetchAndUpdateState(DatabaseReference userTaskReference) async {
+    // Fetch the details of the task
+    final snapshot = await userTaskReference.get();
+    print("SEKS ECE SEKS ");
+    // Check if the snapshot value is not null and is of the expected type
+    if (snapshot.value is Map<dynamic, dynamic>?) {
+      // Access the data from the snapshot
+      Map<dynamic, dynamic>? taskData = snapshot.value as Map<dynamic, dynamic>?;
+
+      if (taskData != null) {
+        // Create a new Item instance using the fetched data
+        KurumsalItem selectedItem = KurumsalItem(
+          name: taskData['name'],
+          description: taskData['description'],
+          date: DateTime.parse(taskData['date']),
+          username: username,
+        );
+
+        // Use the 'selectedItem' instance as needed
+        print("SEKS ECE SEKS ");
+        // Navigate to the DetailsPage and pass the selected item
+        _navigateToDetailsPage(selectedItem);
+      }
+    }
+  }
+  Future<void> checkUserFoundingMembership() async {
+    final String uid = FirebaseAuth.instance.currentUser!.uid;
+    final String yarrak = widget.documentName;
+
+    FirebaseFirestore.instance
+        .collection('kurumlar')
+        .doc(yarrak)
+        .get()
+        .then((DocumentSnapshot snapshot) {
+      if (snapshot.exists) {
+        // Explicitly cast the data object to a Map<String, dynamic>
+        Map<String, dynamic>? data = snapshot.data() as Map<String, dynamic>?;
+
+        if (data != null && data['members'] is List<dynamic>) {
+          var members = data['members'] as List<dynamic>;
+
+          if (members.isNotEmpty) {
+            // Access the fields of the first item in the 'members' array
+            var firstMember = members[0];
+            if (firstMember is Map<String, dynamic>) {
+              // Check if 'kurucuÜye' exists in the first member
+              var kurucuUyeValue = firstMember['name'];
+              if (kurucuUyeValue.toString() == uid ) {
+                isFoundingMember = true;
+              } else {
+                // If 'kurucuÜye' doesn't exist, do something else
+                print('No kurucuÜye value found');
+              }
+            } else {
+              // Handle case when firstMember is not a Map<String, dynamic>
+              print('Invalid format for first member');
+            }
+          } else {
+            // 'members' array is empty
+            print('No members found.');
+          }
+        }
+      } else {
+        // Document not found
+        print('Document not found');
+      }
+    }).catchError((error) {
+      // Handle errors
+      print('Error fetching document: $error');
+    });
+  }
 
   Future<void> _fetchTasksForSelectedDay(DateTime selectedDay) async {
     // Clear tasksMap before populating it again
     tasksMap.clear();
 
-    Globals.itemsList.forEach((items) {
-      items.forEach((item) {
-        if (item.date.isSameDate(selectedDay)) {
-          tasksMap[selectedDay] = tasksMap[selectedDay] ?? [];
+    // Fetch tasks for the selected day from the database
+    List<Task> tasksForSelectedDay = Globals.kurumsalItemsList.expand((items) => items).where((item) =>
+        item.date.isSameDate(selectedDay)).map((item) => Task(details: item.name, date: item.date)).toList();
 
-          // Create a Task object with necessary details
-          Task task = Task(details: item.name, date: item.date);
+    // Filter out expired tasks
+    tasksForSelectedDay = tasksForSelectedDay.where((task) => !task.date.isBefore(DateTime.now())).toList();
 
-          // Add the Task object to the tasksMap
-          tasksMap[selectedDay]!.add(task);
-        }
-      });
-    });
+    // Populate tasksMap with non-expired tasks
+    tasksMap[selectedDay] = tasksForSelectedDay;
 
     setState(() {});
   }
@@ -622,7 +915,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
   void _navigateToDetailsPage(KurumsalItem item) {
-    Navigator.push(
+    Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (context) => KurumsalDetailsPage(
@@ -633,6 +926,8 @@ class _MyHomePageState extends State<MyHomePage> {
           onRemove: () {
             _removeItem(item);
           },
+          username: item.username,
+          documentName: widget.documentName, // Pass it here
         ),
       ),
     );
@@ -640,97 +935,88 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
 
-  Widget _buildFloatingButton(BuildContext context) {
-    return FloatingActionButton(
-      onPressed: () async {
-        final newItem = await _navigateToNewItemScreen(context);
-        if (newItem != null) {
-          _addItem(newItem);
-        }
-      },
-      backgroundColor: Colors.green, // Set the background color to green
-      child: Icon(Icons.add),
-    );
-  }
-
-
-  void _addItem(Item newItem) {
-    setState(() {
-      Globals.itemsList[0].add(newItem);
-
-      final firebaseRef = FirebaseDatabase(
-        databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
-      ).reference();
-
-      User? user = FirebaseAuth.instance.currentUser;
-
-      if (user != null) {
-        // Use the user's UID to create a user-specific branch under 'kurumsal'
-        DatabaseReference userKurumsalReference = firebaseRef.child('kurumsal').child(user.uid);
-
-        Map<String, dynamic> newTaskData = {
-          "name": newItem.name,
-          "description": newItem.description ?? "",
-          "date": newItem.date.toUtc().toIso8601String(),
-        };
-
-        DatabaseReference newTaskReference = userKurumsalReference.push();
-
-        newTaskReference.set(newTaskData);
-
-        Globals.taskKeysByName[newItem.name] = newTaskReference.key!;
-      }
-    });
-  }
-
-
-  Future<Item?> _navigateToNewItemScreen(BuildContext context) async {
+  Future<KurumsalItem?> _navigateToNewItemScreen(BuildContext context) async {
     return await Navigator.push(
       context,
-      MaterialPageRoute<Item>(
-        builder: (context) => NewItemScreen(),
+      MaterialPageRoute<KurumsalItem>(
+        builder: (context) => NewItemScreen(showRow: false, changeBehavior: 2,),
       ),
     );
   }
+  void _removeItem(KurumsalItem item) async {
 
-  void _removeItem(KurumsalItem item) {
-    setState(() {
+    // Perform asynchronous operations first
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      String? documentName = widget.documentName; // Provide the document name here
+      print("YARRRRRRRRRAK");
+      // Get the reference to the Firestore collection
+      CollectionReference kurumlarCollection = FirebaseFirestore.instance.collection('kurumlar');
 
-      // Get the current authenticated user
-      User? user = FirebaseAuth.instance.currentUser;
+      // Get the document reference based on the document name
+      DocumentReference documentRef = kurumlarCollection.doc(documentName);
+      print("YARRRRRRRRRAK");
+      // Fetch the document snapshot
+      DocumentSnapshot documentSnapshot = await documentRef.get();
 
-      // Print statement to check if user is null
-      print("Current user: $user");
+      // Check if the document exists
+      if (documentSnapshot.exists) {
+        // Get the tasks array from the document
+        List<dynamic>? tasks = (documentSnapshot.data() as Map<String, dynamic>?)?['tasks'];
+        print("YARRRRRRRRRAK");
 
-      if (user != null) {
-        final firebaseRef = FirebaseDatabase(
-          databaseURL:
-          "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
-        ).reference();
+        if (tasks != null) {
+          // Create a copy of the tasks list to iterate over
+          List<dynamic> tasksCopy = List.from(tasks);
 
-        String? taskKey = Globals.taskKeysByName[item.name];
-        // Update the reference to include the user's UID
-        DatabaseReference userTaskReference =
-        firebaseRef.child('users').child(user.uid).child(taskKey!);
-        print("KANKAAAA $taskKey");
+          // Iterate through the items in the tasks array
+          for (var task in tasksCopy) {
+            // Check if the task matches the item to be removed
+            if (task is Map<String, dynamic> && // Ensure task is a Map<String, dynamic>
+                task['date'] == item.date &&
+                task['description'] == item.description &&
+                task['name'] == item.name &&
+                task['username'] == user.displayName) {
+              // Remove the matching task from the tasks array
+              tasks.remove(task);
+            }
+          }
 
-        userTaskReference.remove();
-
+          // Update the document in Firestore with the modified tasks array
+          await documentRef.update({'tasks': tasks});
+        }
       }
+    }
 
+    setState(() {
       Globals.itemsList[0].remove(item);
-      Navigator.popUntil(context, (route) => route.isFirst);
     });
   }
+
+
 
   String _formatDate(DateTime date) {
     return "${date.day}/${date.month}/${date.year}";
   }
 
-  int? _calculateDaysLeft(DateTime date) {
+  String _calculateDaysLeft(DateTime date) {
     final currentDate = DateTime.now();
-    final difference = date.difference(currentDate);
-    return difference.isNegative ? null : difference.inDays;
+    final daysLeft = daysBetween(currentDate, date);
+
+    if (daysLeft == 0) {
+      return 'Today';
+    }else if(daysLeft<1){
+      return 'Expired';
+    }
+    else {
+      return '$daysLeft Gün Kaldı';
+    }
+  }
+
+  int daysBetween(DateTime from, DateTime to) {
+    from = DateTime(from.year, from.month, from.day);
+    to = DateTime(to.year, to.month, to.day);
+    return (to.difference(from).inHours / 24).round();
   }
 
   void _showInvitationCode() async {
@@ -755,14 +1041,14 @@ class _MyHomePageState extends State<MyHomePage> {
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: Text('Kurum Invitation Code'),
+              title: const Text('Kurum Invitation Code'),
               content: SelectableText('Invitation Code: $invitationCode'),
               actions: <Widget>[
                 TextButton(
                   onPressed: () {
                     Navigator.pop(context);
                   },
-                  child: Text('OK'),
+                  child: const Text('OK'),
                 ),
               ],
             );
@@ -774,5 +1060,53 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
 
+    Future<void> _shareInvitationCode() async {
+
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final firebaseRef = FirebaseDatabase(
+          databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
+        ).reference();
+
+        // Update the reference to include the user's UID
+        DatabaseReference kurumsalReference = firebaseRef.child("users").child(user.uid).child("kurum");
+
+        // Read the invitation code from the database
+        DataSnapshot dataSnapshot = await kurumsalReference.get();
+        Map<dynamic, dynamic>? values = dataSnapshot.value as Map<dynamic, dynamic>?;
+
+        if (values != null && values.containsKey("invitationCode")) {
+          String invitationCode = values["invitationCode"] as String;
+          Share.share("Join our app with this invitation code: $invitationCode");
+
+        }
+      }
+    }
+
+
+
+  Future<bool> checkIfKurucuMemberExists() async {
+    try {
+      // Reference to the 'kurumlar' collection
+      CollectionReference kurumlarCollection = FirebaseFirestore.instance.collection('kurumlar');
+
+      // Document ID of the specific document you want to check
+      String documentId = 'your_document_id_here';
+
+      // Query to check if any member has 'kurucuÜye' equal to 'evet'
+      QuerySnapshot querySnapshot = await kurumlarCollection
+          .doc(documentId)
+          .collection('members')
+          .where('kurucuÜye', isEqualTo: 'evet')
+          .get();
+
+      // Return true if at least one member is a kurucuÜye with the value "evet"
+      return querySnapshot.docs.isNotEmpty;
+    } catch (error) {
+      print('Error: $error');
+      // Return false in case of an error
+      return false;
+    }
+  }
 
 }

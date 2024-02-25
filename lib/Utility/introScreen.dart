@@ -5,6 +5,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:casetracker/Bireysel/mainBireysel.dart' as Bireysel;
 import 'package:casetracker/Kurumsal/KurumsalMain.dart' as Kurumsal;
 import '../Kurumsal/KurumEkle.dart';
+import 'package:app_settings/app_settings.dart';
 import 'login_screen.dart';
 class HomeScreen extends StatefulWidget {
   @override
@@ -13,15 +14,21 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final DatabaseReference _databaseReference = FirebaseDatabase.instance.reference();
+
+  final DatabaseReference _databaseReference =  FirebaseDatabase(
+    databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
+  ).reference();
   String _username = '';
+
 
   @override
   void initState() {
     super.initState();
     _checkAndUpdateUsername();
+
   }
+
+
   Future<void> _checkAndUpdateUsername() async {
     User? user = FirebaseAuth.instance.currentUser;
 
@@ -48,66 +55,118 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _showSetUsernameDialog(DatabaseReference userReference) async {
     TextEditingController _usernameController = TextEditingController();
+    bool usernameExists = false;
 
     showDialog<void>(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Set Username'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Please set your username:',
-                textAlign: TextAlign.center,
+        final navigatorState = Navigator.of(context);
+        return StatefulBuilder(
+          builder: (BuildContext context, setState) {
+            return AlertDialog(
+              title: const Text('Set Username'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Please set your username:',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _usernameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Username',
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        usernameExists = false; // Reset the flag when username changes
+                      });
+                    },
+                  ),
+                  if (usernameExists)
+                    const Text(
+                      'Username already exists. Please choose a different one.',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                ],
               ),
-              SizedBox(height: 10),
-              TextField(
-                controller: _usernameController,
-                decoration: const InputDecoration(
-                  labelText: 'Username',
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Cancel'),
                 ),
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                String newUsername = _usernameController.text.trim();
+                ElevatedButton(
+                  onPressed: () async {
+                    String newUsername = _usernameController.text.trim();
 
-                if (newUsername.isNotEmpty) {
-                  await userReference.update({
-                    'username': newUsername,
-                  });
+                    if (newUsername.isNotEmpty) {
+                      // Fetch the user list
+                      CollectionReference usernamesCollection =
+                      FirebaseFirestore.instance.collection('usernames');
+                      DocumentSnapshot usernamesDoc =
+                      await usernamesCollection.doc('usernames').get();
+                      List<dynamic> userList =
+                      List.from(usernamesDoc['userList']);
 
-                  setState(() {
-                    _username = newUsername;
-                  });
+                      // Check if the new username already exists in the user list
+                      for (var userItem in userList) {
+                        if (userItem['username'] == newUsername) {
+                          setState(() {
+                            usernameExists = true;
+                          });
+                          return; // Exit onPressed callback if username exists
+                        }
+                      }
 
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Username set successfully.'),
-                    ),
-                  );
+                      // Proceed with updating the username
+                      await userReference.update({
+                        'username': newUsername,
+                      });
 
-                  Navigator.pop(context);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Please enter a valid username.'),
-                    ),
-                  );
-                }
-              },
-              child: Text('Set Username'),
-            ),
-          ],
+                      User? user = FirebaseAuth.instance.currentUser;
+
+                      // Update the username in the user list
+                      for (int i = 0; i < userList.length; i++) {
+                        if (userList[i]['userid'] == user?.uid) {
+                          userList[i]['username'] = newUsername;
+                          break;
+                        }
+                      }
+
+                      // Update the user list in Firestore
+                      await usernamesCollection
+                          .doc('usernames')
+                          .update({'userList': userList});
+
+                      // Update the state using setState for synchronous updates
+                      setState(() {
+                        _username = newUsername;
+                      });
+
+                      Navigator.pop(context);
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Username set successfully.'),
+                        ),
+                      );
+                    } else {
+                      // Display a warning message if the username is empty
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please enter a valid username.'),
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text('Set Username'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -115,7 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
 
-    Future<bool> isUserKurumsalMember(String userId) async {
+  Future<bool> isUserKurumsalMember(String userId) async {
       final firebaseRef = FirebaseDatabase(
         databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
       ).reference();
@@ -176,6 +235,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     MaterialPageRoute(builder: (context) => LoginScreen()),
                   );
                 }
+                else if (value == 'ayarlar') {
+                  AppSettings.openAppSettings(type: AppSettingsType.settings);
+                }
               },
               itemBuilder: (BuildContext context) =>
               [
@@ -190,6 +252,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 const PopupMenuItem<String>(
                   value: 'signOut',
                   child: Text('Sign Out'),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'ayarlar',
+                  child: Text('Ayarlar'),
                 ),
               ],
             ),
@@ -218,17 +284,21 @@ class _HomeScreenState extends State<HomeScreen> {
               ElevatedButton(
                 onPressed: () async {
                   User? user = FirebaseAuth.instance.currentUser;
-                  bool isMember = await isUserKurumsalMember(user!.uid);
+                  String invitationCode = await _getInvitationCodeFromDatabase(user!.uid);
+                  String kurumName = await _getKurumNameFromDatabase(user.uid);
+                  String documentName = ' $kurumName - $invitationCode ';
 
+                  bool isMember = await isUserKurumsalMember(user.uid);
                   if (isMember) {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => Kurumsal.MyHomePage()),
+                        builder: (context) => Kurumsal.MyHomePage(documentName: documentName),
+                      ),
                     );
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
+                      const SnackBar(
                         content: Text("You are not a Kurumsal member yet."),
                       ),
                     );
@@ -256,15 +326,15 @@ class _HomeScreenState extends State<HomeScreen> {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text('Join Kurum'),
+            title: const Text('Join Kurum'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
+                const Text(
                   'You are not a member of any Kurum. Enter the invitation code to join:',
                   textAlign: TextAlign.center,
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 TextField(
                   controller: _invitationCodeController,
                   decoration: const InputDecoration(
@@ -278,14 +348,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 onPressed: () {
                   Navigator.pop(context);
                 },
-                child: Text('Cancel'),
+                child: const Text('Cancel'),
               ),
               ElevatedButton(
                 onPressed: () {
                   String invitationCode = _invitationCodeController.text;
                   _joinKurum(invitationCode, context);
                 },
-                child: Text('Join'),
+                child: const Text('Join'),
               ),
             ],
           );
@@ -295,7 +365,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     Future<void> _joinKurum(String invitationCode, BuildContext context) async {
       User? user = FirebaseAuth.instance.currentUser;
-
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
       if (user != null) {
         final firebaseRef = FirebaseDatabase(
           databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
@@ -325,11 +395,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 });
 
 
-                ScaffoldMessenger.of(context).showSnackBar(
+                scaffoldMessenger.showSnackBar(
                   SnackBar(
                     content: Text(
                         "Successfully joined Kurum: ${kurumsData[kurumKey]['name']}"),
-                    duration: Duration(seconds: 3),
+                    duration: const Duration(seconds: 3),
                   ),
                 );
 
@@ -346,20 +416,20 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     Future<void> addMemberToFirestore(String kurumName) async {
-      final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+      final FirebaseFirestore firestore = FirebaseFirestore.instance;
       User? user = FirebaseAuth.instance.currentUser;
+
 
       try {
         QuerySnapshot kurumlarSnapshot =
-        await _firestore.collection('kurumlar').get();
+        await firestore.collection('kurumlar').get();
 
         for (QueryDocumentSnapshot kurumDocument in kurumlarSnapshot.docs) {
           String kurumDocumentName = kurumDocument.id;
           String osman = kurumName;
-          print("KANKA OSMAN:$osman");
-          print("KANKA kurumName:$kurumName");
+
           if (kurumDocumentName.contains(osman)) {
-            print("YARRRRRRRRAK");
+
             DocumentReference kurumReference = kurumDocument.reference;
 
             DocumentSnapshot kurumSnapshot = await kurumReference.get();
@@ -403,4 +473,37 @@ class _HomeScreenState extends State<HomeScreen> {
         print('Error adding member to Firestore: $e');
       }
     }
+
+// Helper method to get 'invitationCode' from Realtime Database
+  Future<String> _getInvitationCodeFromDatabase(String userId) async {
+    DatabaseReference firebaseRef = FirebaseDatabase(
+      databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
+    ).reference();
+
+    // Reference to 'invitationCode' field in Realtime Database
+    DatabaseReference userTaskReference = firebaseRef.child('users').child(userId).child('kurum').child('invitationCode');
+
+    // Get the 'invitationCode' value
+    DataSnapshot snapshot = await userTaskReference.get();
+
+    return snapshot.value.toString();
+  }
+
+  // Helper method to get 'name' from Realtime Database
+  Future<String> _getKurumNameFromDatabase(String userId) async {
+    DatabaseReference firebaseRef = FirebaseDatabase(
+      databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
+    ).reference();
+
+    // Reference to 'invitationCode' field in Realtime Database
+    DatabaseReference userTaskReference = firebaseRef.child('users').child(userId).child('kurum').child('name');
+
+    // Get the 'invitationCode' value
+    DataSnapshot snapshot = await userTaskReference.get();
+
+    return snapshot.value.toString();
+  }
+
+
+
   }

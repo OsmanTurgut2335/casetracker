@@ -1,5 +1,6 @@
 import 'dart:core';
 import 'dart:math';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
@@ -20,13 +21,17 @@ class EditItemScreen extends StatefulWidget {
 
 class _EditItemScreenState extends State<EditItemScreen>  with RouteAware {
   DateTime _selectedDueDate = DateTime.now();
-  TextEditingController _itemNameController = TextEditingController();
-  TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _itemNameController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+
+
   late String itemName ;
   late String keyValue;
   late String targetValue ;
   late String foundKey ;
   late String? taskKey;
+
+
   String findKeyByValue(Map<String, String> map, String targetValue) {
     for (var entry in map.entries) {
       if (entry.value == targetValue) {
@@ -43,8 +48,10 @@ class _EditItemScreenState extends State<EditItemScreen>  with RouteAware {
     super.initState();
     _selectedDueDate = widget.item.date;
     _itemNameController.text = widget.item.name;
-
     itemName = widget.item.name;
+
+
+
     targetValue = itemName;
     _descriptionController.text = widget.item.description ?? "";
     foundKey = findKeyByValue(Globals.taskKeysByName, targetValue);
@@ -55,10 +62,10 @@ class _EditItemScreenState extends State<EditItemScreen>  with RouteAware {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Edit Item'),
+        title: const Text('Edit Item'),
         backgroundColor: Colors.grey, // Set app bar background color
         elevation: 4, // Set the elevation for a shadow effect
-        shape: UnderlineInputBorder(
+        shape: const UnderlineInputBorder(
 
         ),
       ),
@@ -70,17 +77,18 @@ class _EditItemScreenState extends State<EditItemScreen>  with RouteAware {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _buildDueDateSelector(),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               _buildItemNameField(),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               _buildDescriptionField(),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () async {
                   final editedItem = Item(
                     name: _itemNameController.text,
                     description: _descriptionController.text,
                     date: _selectedDueDate,
+
                   );
 
                   try {
@@ -92,10 +100,12 @@ class _EditItemScreenState extends State<EditItemScreen>  with RouteAware {
                         databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
                       ).reference();
 
-                      print("OLD ITEM NAME I GUESS $itemName");
-
-                      DatabaseReference userTaskReference =
-                      firebaseRef.child('users').child(user.uid).child(Globals.taskKeysByName[itemName]!);
+                      // Update Realtime Database
+                      DatabaseReference userTaskReference = firebaseRef
+                          .child('users')
+                          .child(user.uid)
+                          .child("tasks")
+                          .child(Globals.taskKeysByName[itemName]!);
 
                       // Create a map for the new task
                       Map<String, dynamic> newTaskData = {
@@ -106,6 +116,36 @@ class _EditItemScreenState extends State<EditItemScreen>  with RouteAware {
 
                       await userTaskReference.set(newTaskData);
 
+                      // Update Cloud Firestore
+                      final firestore = FirebaseFirestore.instance;
+                      String invitationCode = await _getInvitationCodeFromDatabase(user.uid);
+                      String kurumName = await _getKurumNameFromDatabase(user.uid);
+                      String documentName = " $kurumName - $invitationCode ";
+
+                      QuerySnapshot querySnapshot = await firestore
+                          .collection('kurumlar')
+                          .where(FieldPath.documentId, isEqualTo: documentName)
+                          .get();
+
+                      for (QueryDocumentSnapshot document in querySnapshot.docs) {
+                        List tasksArray = document['tasks'];
+
+                        for (int i = 0; i < tasksArray.length; i++) {
+                          if (tasksArray[i]['name'] == itemName) {
+                            // Update the name, description, and date in the tasks array
+                            tasksArray[i]['name'] = editedItem.name;
+                            tasksArray[i]['description'] = editedItem.description ?? "";
+                            tasksArray[i]['date'] = editedItem.date.toUtc().toIso8601String();
+
+                            // Update the Firestore document with the modified tasks array
+                            await firestore.collection('kurumlar').doc(document.id).update({
+                              'tasks': tasksArray,
+                            });
+
+                            break; // Break the loop once the item is found and updated
+                          }
+                        }
+                      }
 
                       // *************************
                       for (var itemList in Globals.itemsList) {
@@ -128,9 +168,12 @@ class _EditItemScreenState extends State<EditItemScreen>  with RouteAware {
                     print("Error during database update: $e");
                     // Handle error if needed
                   }
+                  Navigator.pop(context);
 
-                  // Pop back to the first screen
-                  Navigator.popUntil(context, (route) => route.isFirst);
+
+
+
+
                 },
                   style: ElevatedButton.styleFrom(
                     elevation: 5, // Shadow depth
@@ -140,7 +183,7 @@ class _EditItemScreenState extends State<EditItemScreen>  with RouteAware {
                       borderRadius: BorderRadius.circular(10.0), // Button border radius
                     ),
                   ),
-                  child: Text('Save Changes'),
+                  child: const Text('Save Changes'),
               ),
             ],
           ),
@@ -152,13 +195,13 @@ class _EditItemScreenState extends State<EditItemScreen>  with RouteAware {
   Widget _buildDueDateSelector() {
     return Row(
       children: [
-        Text(
+        const Text(
           'Due Date:',
           style: TextStyle(
             color: Colors.black, // Set text color
           ),
         ),
-        SizedBox(width: 16),
+        const SizedBox(width: 16),
         TextButton(
           onPressed: () async {
             final pickedDate = await showDatePicker(
@@ -174,11 +217,11 @@ class _EditItemScreenState extends State<EditItemScreen>  with RouteAware {
             }
           },
           style: TextButton.styleFrom(
-            primary: Colors.grey[400] , // Set button text color
+            foregroundColor: Colors.grey[400] , // Set button text color
           ),
           child: Text(
             '${_selectedDueDate.day}/${_selectedDueDate.month}/${_selectedDueDate.year}',
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.grey // Set date text color
             ),
           ),
@@ -196,7 +239,7 @@ class _EditItemScreenState extends State<EditItemScreen>  with RouteAware {
         controller: _itemNameController,
         decoration: InputDecoration(
           labelText: 'Item Name',
-          labelStyle: TextStyle(
+          labelStyle: const TextStyle(
             color: Colors.black, // Set label text color
           ),
           focusedBorder: OutlineInputBorder(
@@ -214,13 +257,13 @@ class _EditItemScreenState extends State<EditItemScreen>  with RouteAware {
 
   Widget _buildDescriptionField() {
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 10),
+      margin: const EdgeInsets.symmetric(vertical: 10),
       child: TextField(
         controller: _descriptionController,
         maxLines: 3,
         decoration: InputDecoration(
           labelText: 'Description',
-          labelStyle: TextStyle(
+          labelStyle: const TextStyle(
             color: Colors.black, // Set label text color
           ),
           focusedBorder: OutlineInputBorder(
@@ -240,6 +283,37 @@ class _EditItemScreenState extends State<EditItemScreen>  with RouteAware {
 
 
 }
+
+// Helper method to get 'invitationCode' from Realtime Database
+Future<String> _getInvitationCodeFromDatabase(String userId) async {
+  DatabaseReference firebaseRef = FirebaseDatabase(
+    databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
+  ).reference();
+
+  // Reference to 'invitationCode' field in Realtime Database
+  DatabaseReference userTaskReference = firebaseRef.child('users').child(userId).child('kurum').child('invitationCode');
+
+  // Get the 'invitationCode' value
+  DataSnapshot snapshot = await userTaskReference.get();
+
+  return snapshot.value.toString();
+}
+
+// Helper method to get 'name' from Realtime Database
+Future<String> _getKurumNameFromDatabase(String userId) async {
+  DatabaseReference firebaseRef = FirebaseDatabase(
+    databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
+  ).reference();
+
+  // Reference to 'invitationCode' field in Realtime Database
+  DatabaseReference userTaskReference = firebaseRef.child('users').child(userId).child('kurum').child('name');
+
+  // Get the 'invitationCode' value
+  DataSnapshot snapshot = await userTaskReference.get();
+
+  return snapshot.value.toString();
+}
+
 class MyCustomPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -265,4 +339,6 @@ class MyCustomPainter extends CustomPainter {
   bool shouldRepaint(CustomPainter oldDelegate) {
     return false;
   }
+
+
 }
