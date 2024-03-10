@@ -1,4 +1,5 @@
 import 'dart:core';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -23,8 +24,21 @@ class _NewItemScreenState extends State<NewItemScreen> {
   final TextEditingController _itemNameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   bool _shareWithOrganization = false;
+  User? user = FirebaseAuth.instance.currentUser;
+  bool _isUserKurumsalMember = false;
+  final Globals _globals = Globals();
 
-
+  Future<void> _checkKurumsalMembership() async {
+    bool isMember = await _globals.isUserKurumsalMember(user!.uid);
+    setState(() {
+      _isUserKurumsalMember = isMember;
+    });
+  }
+  @override
+  void initState() {
+    super.initState();
+    _checkKurumsalMembership();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,9 +62,7 @@ class _NewItemScreenState extends State<NewItemScreen> {
             _buildDueDateSelector(),
             const SizedBox(height: 8),
             Column(
-
               children: [
-                // Wrap the Row widget in a Visibility widget
                 Visibility(
                   visible: widget.showRow, // Control visibility based on the showRow flag
                   child: Row(
@@ -58,7 +70,9 @@ class _NewItemScreenState extends State<NewItemScreen> {
                     children: [
                       Checkbox(
                         value: _shareWithOrganization,
-                        onChanged: (value) {
+                        onChanged: !_isUserKurumsalMember
+                            ? null
+                            : (value) {
                           setState(() {
                             _shareWithOrganization = value!;
                           });
@@ -77,9 +91,9 @@ class _NewItemScreenState extends State<NewItemScreen> {
                         date: _selectedDueDate,
                       );
                       final newKurumsalItem=KurumsalItem(
-                      name: _itemNameController.text,
-                      description: _descriptionController.text,
-                      date: _selectedDueDate,
+                        name: _itemNameController.text,
+                        description: _descriptionController.text,
+                        date: _selectedDueDate,
                         username: '',
                       );
 

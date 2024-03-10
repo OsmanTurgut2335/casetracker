@@ -106,6 +106,7 @@ class _MyHomePageState extends State<MyHomePage> {
   List<KurumsalItem> filteredItems = [];
   DateTime _selectedDay = DateTime.now();
   late String username;
+  late String actualUsername;
   Map<DateTime, List<Task>> tasksMapForMonth = {};
   bool isFoundingMember = false;
   final firebaseRef = FirebaseDatabase(
@@ -116,7 +117,31 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     _fetchKurumsalItemsFromDatabase();
+    getUserUsername();
+  }
 
+  void getUserUsername() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      DatabaseReference userTaskReference3 = firebaseRef.child('users').child(user.uid).child("username");
+      try {
+        DataSnapshot snapshot = await userTaskReference3.get();
+
+        // Check if the snapshot exists and contains a value
+        if (snapshot.exists && snapshot.value != null) {
+          String username = snapshot.value.toString(); // Convert the value to a String
+          actualUsername= username;
+          print("SEKS RABİA SEKSS  $actualUsername");
+          // Here you can use the username value as needed.
+        } else {
+          print("Username not found or null.");
+        }
+      } catch (error) {
+        print("Failed to retrieve username: $error");
+      }
+    } else {
+      print("User not signed in.");
+    }
   }
 
 
@@ -162,13 +187,15 @@ class _MyHomePageState extends State<MyHomePage> {
                username = taskData['username'];
               print("YARRRRRRRRRAK");
               // Create a KurumsalItem and add it to the kurumsalItemsList
+
+
               KurumsalItem kurumsalItem = KurumsalItem(
                 name: name,
                 description: description,
                 date: date,
                 username: username,
               );
-
+              print("Kurumsal Item Details : ${kurumsalItem.username} ");
 
               // Add the KurumsalItem to the kurumsalItemsList at the determined index
               Globals.kurumsalItemsList[0].add(kurumsalItem);
@@ -737,14 +764,18 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _addItem(KurumsalItem? kurumsalItem){
+    //BURADA FİRESTOREA EKLERKEN USERNAME İ YANLIŞ EKLİYOR.ZATEN BU EKRANDAN Bİ ADD ITEM OLUCAKSA
+    //BİR TANE USERNAME OLUR O DA YÖNETİCİNİN . ORDAN DA GİDİLEBİLİR.
     if (kurumsalItem != null) {
-      kurumsalItem.username = username;
+
       Globals.kurumsalItemsList[0].add(kurumsalItem);
       // Get the current authenticated user
       User? user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         DatabaseReference userTaskReference2 =
         firebaseRef.child('users').child(user.uid).child("kurum");
+
+
 
         userTaskReference2.get().then((DataSnapshot snapshot) {
           if (snapshot.value != null && snapshot.value is Map<dynamic, dynamic>) {
@@ -768,7 +799,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   DocumentReference documentReference =
                       querySnapshot.docs.first.reference;
                   Map<String, dynamic> userData = {
-                    'username': username, // replace with actual username
+                    'username': actualUsername, // replace with actual username
                     'name': kurumsalItem.name,
                     'description': kurumsalItem.description,
                     "date": kurumsalItem.date.toUtc().toIso8601String(),

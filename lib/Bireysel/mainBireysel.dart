@@ -99,6 +99,7 @@ class _MyHomePageState extends State<MyHomePage> {
   late ScrollController _scrollController;
   DateTime _selectedDay = DateTime.now();
   late List<DateTime> daysWithTasks ;
+
   final firebaseRef = FirebaseDatabase(
     databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
   ).reference();
@@ -615,6 +616,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _addItem(Tuple2<Item, bool> newItemWithShare) {
     setState(() {
+
       final Item newItem = newItemWithShare.item1;
       final bool shareWithOrganization = newItemWithShare.item2;
 
@@ -624,6 +626,20 @@ class _MyHomePageState extends State<MyHomePage> {
       User? user = FirebaseAuth.instance.currentUser;
 
       if (user != null) {
+        // Add the item to user's tasks
+        DatabaseReference userTaskReference =
+        firebaseRef.child('users').child(user.uid).child('tasks');
+        Map<String, dynamic> newTaskData = {
+          "name": newItem.name,
+          "description": newItem.description ?? "",
+          "date": newItem.date.toUtc().toIso8601String(),
+          "email": user.email
+        };
+        print("New task data: $newTaskData");
+        DatabaseReference newTaskReference =
+        userTaskReference.push();
+        newTaskReference.set(newTaskData);
+        Globals.taskKeysByName[newItem.name] = newTaskReference.key!;
         DatabaseReference userTaskReference2 =
         firebaseRef.child('users').child(user.uid).child("kurum");
 
@@ -661,20 +677,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     }, SetOptions(merge: true));
                     print('Array field updated/created successfully!');
                   }
-                    // Add the item to user's tasks
-                    DatabaseReference userTaskReference =
-                    firebaseRef.child('users').child(user.uid).child('tasks');
-                    Map<String, dynamic> newTaskData = {
-                      "name": newItem.name,
-                      "description": newItem.description ?? "",
-                      "date": newItem.date.toUtc().toIso8601String(),
-                      "email": user.email
-                    };
-                    print("New task data: $newTaskData");
-                    DatabaseReference newTaskReference =
-                    userTaskReference.push();
-                    newTaskReference.set(newTaskData);
-                    Globals.taskKeysByName[newItem.name] = newTaskReference.key!;
+
 
                 } else {
                   print('Document not found with the specified value.');

@@ -79,6 +79,20 @@ class Globals {
       }
     }
   }
+  Future<bool> isUserKurumsalMember(String userId) async {
+
+    final firebaseRef = FirebaseDatabase(
+      databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
+    ).reference();
+
+    DatabaseReference userTaskReference =
+    firebaseRef.child('users').child(userId).child("kurum");
+
+    DataSnapshot snapshot = await userTaskReference.get();
+
+    return snapshot.value != null;
+  }
+
   Future<void>  fetchKurumsalItemsFromDatabase() async {
     // Clear the existing kurumsalItemsList
     Globals.kurumsalItemsList[0].clear();
