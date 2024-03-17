@@ -107,6 +107,7 @@ class _MyHomePageState extends State<MyHomePage> {
   DateTime _selectedDay = DateTime.now();
   late String username;
   late String actualUsername;
+
   Map<DateTime, List<Task>> tasksMapForMonth = {};
   bool isFoundingMember = false;
   final firebaseRef = FirebaseDatabase(
@@ -285,15 +286,15 @@ class _MyHomePageState extends State<MyHomePage> {
                 return [
                   const PopupMenuItem(
                     value: 'signOut',
-                    child: Text('Sign Out'),
+                    child: Text('Çıkış'),
                   ),
                   const PopupMenuItem(
                     value: 'showInvitationCode',
-                    child: Text('Show Invitation Code'),
+                    child: Text('Davet Kodunu Göster'),
                   ),
                   const PopupMenuItem(
                     value: 'shareInvitationCode',
-                    child: Text('Share Invitation Code'),
+                    child: Text('Davet Kodunu Paylaş'),
                   ),
                 ];
               },
@@ -377,8 +378,8 @@ class _MyHomePageState extends State<MyHomePage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildTabItem("First Screen", 0),
-          _buildTabItem("Second Screen", 1),
+          _buildTabItem("Liste Görünümü", 0),
+          _buildTabItem("Takvim Görünümü", 1),
         ],
       ),
     );
@@ -412,99 +413,91 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
 
-
   Widget _buildPage(List<KurumsalItem> items) {
     items.sort((a, b) => a.date.compareTo(b.date));
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        RefreshIndicator(
-          onRefresh: _pullRefresh,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              children: [
-                for (final item in items)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 5.0),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8.0),
-                        border: Border.all(
-                          color: Colors.lime[400] ?? Colors.green,
-                          width: 4.0, // Set the border width (you can adjust this value)
+    return RefreshIndicator(
+      onRefresh: _pullRefresh,
+      child: ListView(
+        children: [
+          for (final item in items)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 5.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8.0),
+                  border: Border.all(
+                    color: Colors.lime[400] ?? Colors.green,
+                    width: 4.0,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey[600] ?? Colors.grey,
+                      spreadRadius: 1,
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
+                child: ListTile(
+                  title: Text(
+                    '${item.name} - ${_formatDate(item.date)}',
+                    style: const TextStyle(
+                      color: Colors.black,
+                    ),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _calculateDaysLeft(item.date),
+                        style: const TextStyle(
+                          color: Colors.black,
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey[600] ?? Colors.grey,
-                            spreadRadius: 1,
-                            blurRadius: 4,
-                          ),
-                        ],
                       ),
-                      child: ListTile(
-                        title: Text(
-                          '${item.name} - ${_formatDate(item.date)}',
+                      if (_calculateDaysLeft(item.date) != 'Süresi Geçti')
+                        Text(
+                          'Görevli : ${item.username}',
                           style: const TextStyle(
                             color: Colors.black,
                           ),
                         ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _calculateDaysLeft(item.date),
-                              style: const TextStyle(
-                                color: Colors.black,
-                              ),
-                            ),
-                            if (_calculateDaysLeft(item.date) != 'Expired')
-                              Text(
-                                'Görevli : ${item.username}',
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                ),
-                              ),
-                            // Add your additional subtext here
-                          ],
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => KurumsalDetailsPage(
-                                title: "Screen ${_currentPage + 1}",
-                                item: item.name,
-                                description: item.description ?? "",
-                                itemDate: item.date,
-                                username: item.username,
-                                onRemove: () {
-                                  _removeItem(item);
-                                },
-                                documentName: widget.documentName, // Pass it here
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-
-
-                    ),
+                      // Add your additional subtext here
+                    ],
                   ),
-              ],
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => KurumsalDetailsPage(
+                          title: "Screen ${_currentPage + 1}",
+                          item: item.name,
+                          description: item.description ?? "",
+                          itemDate: item.date,
+                          username: item.username,
+                          onRemove: () {
+                            _removeItem(item);
+                          },
+                          documentName: widget.documentName, // Pass it here
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
             ),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
 
 
 
+
   Widget _buildCalendarPage() {
+    BuildContext context = this.context;
     _fetchTasksForTheCurrentMonth();
+    bool _isNavigating = false; // Add this boolean flag
 
     Map<String, List<Event>> events = {};
 
@@ -528,128 +521,56 @@ class _MyHomePageState extends State<MyHomePage> {
       return events[formattedStr] ?? [];
     }
 
-    return Column(
-      children: [
-        TableCalendar(
-          focusedDay: _selectedDay,
-          firstDay: DateTime.utc(2020, 1, 1),
-          lastDay: DateTime.utc(2030, 12, 31),
-          calendarStyle: const CalendarStyle(
-            markersAlignment: Alignment.bottomCenter,
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          TableCalendar(
+            focusedDay: _selectedDay,
+            firstDay: DateTime.utc(2020, 1, 1),
+            lastDay: DateTime.utc(2030, 12, 31),
+            calendarStyle: const CalendarStyle(
+              markersAlignment: Alignment.bottomCenter,
+            ),
+            eventLoader: getMyEvents,
+            selectedDayPredicate: (day) {
+              // Check if the provided day is the same as the selected day
+              return isSameDay(_selectedDay, day);
+            },
+            onDaySelected: (selectedDay, focusedDay) async {
+              setState(() {
+                _selectedDay = selectedDay;
+              });
+              // Fetch tasks for the selected day from the database
+              await _fetchTasksForSelectedDay(selectedDay);
+            },
           ),
-          eventLoader: getMyEvents,
-          selectedDayPredicate: (day) {
-            // Check if the provided day is the same as the selected day
-            return isSameDay(_selectedDay, day);
-          },
-          onDaySelected: (selectedDay, focusedDay) async {
-            setState(() {
-              _selectedDay = selectedDay;
-            });
-            // Fetch tasks for the selected day from the database
-            await _fetchTasksForSelectedDay(selectedDay);
-          },
-        ),
-        const SizedBox(height: 16),
-        if (tasksMap[_selectedDay] != null && tasksMap[_selectedDay]!.isNotEmpty)
-          Expanded(
-            child: ListView(
+          const SizedBox(height: 16),
+          if (tasksMap[_selectedDay] != null && tasksMap[_selectedDay]!.isNotEmpty)
+            ListView(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
               children: [
-                Text('Tasks for ${_formatDate(_selectedDay)}:'),
+                Text('${_formatDate(_selectedDay)} tarihi için görevler :'),
                 for (final task in tasksMap[_selectedDay]!)
                   GestureDetector(
-                    onTap: () async {
-                      print("RABİA ALLAHINI SİKEYİM ${task.details}");
-
+                    onTap: ()  async {
                       // Access Firestore
                       FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-                      try {
+
 
                         QuerySnapshot querySnapshot = await firestore
                             .collection('kurumlar')
                             .where(FieldPath.documentId, isEqualTo: widget.documentName)
                             .get();
 
-// Check if any document is found
-                        if (querySnapshot.docs.isNotEmpty) {
-                          // Access the first document's data
-                          Map<String, dynamic> data = querySnapshot.docs.first.data() as Map<String, dynamic>;
-
-                          // Get the 'tasks' array from the document
-                          List<dynamic>? tasks = data['tasks'];
-
-                          if (tasks != null) {
-
-                            for (var taskData in tasks) {
-
-                              // Extract data from each task item
-                              String name = taskData['name'];
-
-                              DateTime date = DateTime.parse(taskData['date']);
-
-                              if(task.details == name &&  task.date==date){
-                                String newUsername = taskData['username'];
-                                if(username == newUsername){
-                                  KurumsalItem item = KurumsalItem(name: name, date: date, username: username);
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => KurumsalDetailsPage(
-
-                                        title: "Screen ${_currentPage + 1}",
-                                        item: name,
-                                        description: task.details ?? "",
-                                        itemDate: task.date,
-                                        username: newUsername,
-                                        onRemove: () {
-                                          _removeItem(item);
-                                        },
-                                        documentName: widget.documentName, // Pass it here
-                                      ),
-                                    ),
-                                  );
-                                }
-                                else{
-
-                                }
-
-                              }
 
 
-                            }
-                            setState(() {});
-                            // Now kurumsalItemsList should contain the items from the 'tasks' array
-                          }
-                        } else {
-                          // Handle the case where the document is not found
-                          print('Document not found with the specified value.');
-                        }
 
-                      } catch (e) {
-                        print("Error: $e");
-                      }
 
-                      /*
-                        Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => KurumsalDetailsPage(
 
-                            title: "Screen ${_currentPage + 1}",
-                            item: task.name,
-                            description: task.details ?? "",
-                            itemDate: task.date,
-                            username: item.username,
-                            onRemove: () {
-                              _removeItem(item);
-                            },
-                            documentName: widget.documentName, // Pass it here
-                          ),
-                        ),
-                      );*/
 
-                     // Fetch the current authenticated user
+                      // Fetch the current authenticated user
                       User? user = FirebaseAuth.instance.currentUser;
 
                       // Print statement to check if user is null
@@ -657,15 +578,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
                       if (user != null) {
                         String? taskKey = Globals.taskKeysByName[task.details];
-
-                        // Update the reference to include the user's UID
                         DatabaseReference userTaskReference = firebaseRef
                             .child('users')
                             .child(user.uid)
                             .child('tasks')
                             .child(taskKey!);
 
-                        // Perform asynchronous work outside of setState
                         _fetchAndUpdateState(userTaskReference);
                       }
                     },
@@ -673,7 +591,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       height: 50,
                       margin: const EdgeInsets.symmetric(vertical: 8.0),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(25.0), // Half of the height to make it round
+                        borderRadius: BorderRadius.circular(25.0),
                         gradient: LinearGradient(
                           colors: [
                             Colors.cyan[900] ?? Colors.cyan,
@@ -682,7 +600,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                       ),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(25.0), // Half of the height to make it round
+                        borderRadius: BorderRadius.circular(25.0),
                         child: ListTile(
                           title: Text(
                             task.details,
@@ -696,11 +614,11 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                   ),
               ],
-            ),
-          )
-        else
-          Text('No tasks for ${_formatDate(_selectedDay)}'),
-      ],
+            )
+          else
+            Text('${_formatDate(_selectedDay)} tarihi için görev yok'),
+        ],
+      ),
     );
   }
 
@@ -747,7 +665,7 @@ class _MyHomePageState extends State<MyHomePage> {
           _filterItems(value);
         },
         decoration:const  InputDecoration(
-          hintText: 'Search...',
+          hintText: 'Görev Ara',
           prefixIcon: Icon(Icons.search),
         ),
       ),
@@ -1035,9 +953,9 @@ class _MyHomePageState extends State<MyHomePage> {
     final daysLeft = daysBetween(currentDate, date);
 
     if (daysLeft == 0) {
-      return 'Today';
+      return 'Bugün';
     }else if(daysLeft<1){
-      return 'Expired';
+      return 'Süresi Geçti';
     }
     else {
       return '$daysLeft Gün Kaldı';
@@ -1108,7 +1026,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
         if (values != null && values.containsKey("invitationCode")) {
           String invitationCode = values["invitationCode"] as String;
-          Share.share("Join our app with this invitation code: $invitationCode");
+          // Find the index of the '-' character
+          int dashIndex = widget.documentName.indexOf('-');
+
+      // Extract the text before the '-' character
+          String textBeforeDash = widget.documentName.substring(0, dashIndex).trim();
+
+          Share.share("$textBeforeDash kurumumuza bu davet koduyla katılabilirsin: $invitationCode");
 
         }
       }

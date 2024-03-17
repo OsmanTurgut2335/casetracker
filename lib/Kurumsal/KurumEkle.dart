@@ -155,55 +155,57 @@ class _KurumEkleScreenState extends State<KurumEkleScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Kurum Ekle'),
+        title: const Text('Kurum Ekle'),
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            GestureDetector(
-              onTap: () {
-                getImage();
-              },
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration:const  BoxDecoration(
-                  color: Colors.grey,
-                  shape: BoxShape.circle,
-                ),
-                child: _image != null
-                    ? ClipOval(
-                  child: Image.file(
-                    _image!,
-                    width: 100,
-                    height: 100,
-                    fit: BoxFit.cover,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  getImage();
+                },
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration:const  BoxDecoration(
+                    color: Colors.grey,
+                    shape: BoxShape.circle,
                   ),
-                )
-                    : const Icon(
-                  Icons.add_a_photo,
-                  size: 40,
+                  child: _image != null
+                      ? ClipOval(
+                    child: Image.file(
+                      _image!,
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                      : const Icon(
+                    Icons.add_a_photo,
+                    size: 40,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _kurumNameController,
-              maxLength: 50,
-              decoration: const InputDecoration(
-                labelText: 'Kurum Name',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _kurumNameController,
+                maxLength: 50,
+                decoration: const InputDecoration(
+                  labelText: 'Kurum Name',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-            const  SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: isButtonEnabled ? _onKurumEkleButtonPressed : null,
-              child: Text('Kurum Ekle'),
-            ),
-            const SizedBox(height: 20),
-
-          ],
+              const  SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: isButtonEnabled ? _onKurumEkleButtonPressed : null,
+                child: const Text('Kurum Ekle'),
+              ),
+              const SizedBox(height: 20),
+          
+            ],
+          ),
         ),
       ),
     );

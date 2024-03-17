@@ -54,10 +54,10 @@ class _EditKurumsalItemScreenState extends State<EditKurumsalItemScreen> with Ro
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edit Kurumsal Item'),
+        title: const Text('Görevi Düzenle'),
         backgroundColor: Colors.grey,
         elevation: 4,
-        shape: UnderlineInputBorder(),
+        shape: const UnderlineInputBorder(),
       ),
       body: CustomPaint(
         child: Padding(
@@ -178,7 +178,7 @@ class _EditKurumsalItemScreenState extends State<EditKurumsalItemScreen> with Ro
                       borderRadius: BorderRadius.circular(10.0),
                     ),
                   ),
-                  child:const Text('Save Changes'),
+                  child:const Text('Değişiklikleri Kaydet'),
                 ),
               ],
             ),
@@ -192,7 +192,7 @@ class _EditKurumsalItemScreenState extends State<EditKurumsalItemScreen> with Ro
     return Row(
       children: [
         const  Text(
-          'Due Date:',
+          'Bitiş Tarihi:',
           style: TextStyle(
             color: Colors.black,
           ),
@@ -230,7 +230,7 @@ class _EditKurumsalItemScreenState extends State<EditKurumsalItemScreen> with Ro
       child: TextField(
         controller: _itemNameController,
         decoration: InputDecoration(
-          labelText: 'Item Name',
+          labelText: 'İsim',
           labelStyle:const TextStyle(
             color: Colors.black,
           ),
@@ -253,7 +253,7 @@ class _EditKurumsalItemScreenState extends State<EditKurumsalItemScreen> with Ro
       child: TextField(
         controller: _personController,
         decoration: InputDecoration(
-          labelText: 'Person',
+          labelText: 'Sorumlu Kişi',
           labelStyle:const TextStyle(
             color: Colors.black,
           ),
@@ -277,7 +277,7 @@ class _EditKurumsalItemScreenState extends State<EditKurumsalItemScreen> with Ro
         controller: _descriptionController,
         maxLines: 3,
         decoration: InputDecoration(
-          labelText: 'Description',
+          labelText: 'Açıklama',
           labelStyle: const TextStyle(
             color: Colors.black,
           ),

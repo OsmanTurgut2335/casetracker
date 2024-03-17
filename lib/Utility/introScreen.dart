@@ -64,105 +64,114 @@ class _HomeScreenState extends State<HomeScreen> {
         return StatefulBuilder(
           builder: (BuildContext context, setState) {
             return AlertDialog(
-              title: const Text('Set Username'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Please set your username:',
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: _usernameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Username',
-                    ),
-                    onChanged: (value) {
-                      setState(() {
-                        usernameExists = false; // Reset the flag when username changes
-                      });
-                    },
-                  ),
-                  if (usernameExists)
+              title: const Text('Kullanıcı Adı Belirle'),
+              contentPadding: const EdgeInsets.fromLTRB(15.0, 15.0, 15.0, 15.0), // Adjust content padding
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                     const Text(
-                      'Username already exists. Please choose a different one.',
-                      style: TextStyle(color: Colors.red),
+                      'Kullanıcı adınız diğer kullanıcılar tarafından görülebilecektir',
+                      textAlign: TextAlign.center,
                     ),
-                ],
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _usernameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Username',
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          usernameExists = false; // Reset the flag when username changes
+                        });
+                      },
+                    ),
+                    if (usernameExists)
+                      const Text(
+                        'Bu kullanıcı adı kullanılıyor.Lütfen farklı bir kullanıcı adı giriniz',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                  ],
+                ),
               ),
               actions: <Widget>[
-                TextButton(
+              /*  TextButton(
                   onPressed: () {
                     Navigator.pop(context);
                   },
                   child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    String newUsername = _usernameController.text.trim();
+                ),*/
+                Row(
+                 mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                    onPressed: () async {
+                      String newUsername = _usernameController.text.trim();
 
-                    if (newUsername.isNotEmpty) {
-                      // Fetch the user list
-                      CollectionReference usernamesCollection =
-                      FirebaseFirestore.instance.collection('usernames');
-                      DocumentSnapshot usernamesDoc =
-                      await usernamesCollection.doc('usernames').get();
-                      List<dynamic> userList =
-                      List.from(usernamesDoc['userList']);
+                      if (newUsername.isNotEmpty) {
+                        // Fetch the user list
+                        CollectionReference usernamesCollection =
+                        FirebaseFirestore.instance.collection('usernames');
+                        DocumentSnapshot usernamesDoc =
+                        await usernamesCollection.doc('usernames').get();
+                        List<dynamic> userList =
+                        List.from(usernamesDoc['userList']);
 
-                      // Check if the new username already exists in the user list
-                      for (var userItem in userList) {
-                        if (userItem['username'] == newUsername) {
-                          setState(() {
-                            usernameExists = true;
-                          });
-                          return; // Exit onPressed callback if username exists
+                        // Check if the new username already exists in the user list
+                        for (var userItem in userList) {
+                          if (userItem['username'] == newUsername) {
+                            setState(() {
+                              usernameExists = true;
+                            });
+                            return; // Exit onPressed callback if username exists
+                          }
                         }
-                      }
 
-                      // Proceed with updating the username
-                      await userReference.update({
-                        'username': newUsername,
-                      });
+                        // Proceed with updating the username
+                        await userReference.update({
+                          'username': newUsername,
+                        });
 
-                      User? user = FirebaseAuth.instance.currentUser;
+                        User? user = FirebaseAuth.instance.currentUser;
 
-                      // Update the username in the user list
-                      for (int i = 0; i < userList.length; i++) {
-                        if (userList[i]['userid'] == user?.uid) {
-                          userList[i]['username'] = newUsername;
-                          break;
+                        // Update the username in the user list
+                        for (int i = 0; i < userList.length; i++) {
+                          if (userList[i]['userid'] == user?.uid) {
+                            userList[i]['username'] = newUsername;
+                            break;
+                          }
                         }
+
+                        // Update the user list in Firestore
+                        await usernamesCollection
+                            .doc('usernames')
+                            .update({'userList': userList});
+
+                        // Update the state using setState for synchronous updates
+                        setState(() {
+                          _username = newUsername;
+                        });
+
+                        Navigator.pop(context);
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Kullanıcı adı başarıyla oluşturuldu.'),
+                              duration: Duration(seconds: 2)
+                          ),
+                        );
+                      } else {
+                        // Display a warning message if the username is empty
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Lütfen geçerli bir kullanıcı adı girin.'),
+                              duration: Duration(seconds: 1)
+                          ),
+                        );
                       }
-
-                      // Update the user list in Firestore
-                      await usernamesCollection
-                          .doc('usernames')
-                          .update({'userList': userList});
-
-                      // Update the state using setState for synchronous updates
-                      setState(() {
-                        _username = newUsername;
-                      });
-
-                      Navigator.pop(context);
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Username set successfully.'),
-                        ),
-                      );
-                    } else {
-                      // Display a warning message if the username is empty
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please enter a valid username.'),
-                        ),
-                      );
-                    }
-                  },
-                  child: const Text('Set Username'),
+                    },
+                    child: const Text('Tamam'),
+                  ),],
                 ),
               ],
             );
@@ -194,7 +203,8 @@ class _HomeScreenState extends State<HomeScreen> {
       textDirection: TextDirection.ltr,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text("Home Screen"),
+          centerTitle: true,
+          title: const Text("Ana Ekran",textAlign: TextAlign.center,),
           actions: [
             PopupMenuButton<String>(
               onSelected: (value) async {
@@ -206,7 +216,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   if (isUserMember) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text("You are already a member of a kurum and cannot add a new one."),
+                        content: Text("Zaten bir kurum üyesi olduğunuz için yeni bir kurum oluşturamazsınız."),
+                          duration: Duration(seconds: 2)
                       ),
                     );
                   } else {
@@ -222,7 +233,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   if (isUserMember) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text("You are already a member of a kurum and cannot join another one."),
+                        content: Text("Zaten bir kurum üyesi olduğunuz için başka bir kuruma katılamazsınız"),
+                          duration: Duration(seconds: 2)
+
                       ),
                     );
                   } else {
@@ -243,15 +256,15 @@ class _HomeScreenState extends State<HomeScreen> {
               [
                 const PopupMenuItem<String>(
                   value: 'addKurum',
-                  child: Text('Add Kurum'),
+                  child: Text('Kurum Oluştur'),
                 ),
                 const PopupMenuItem<String>(
                   value: 'joinKurum',
-                  child: Text('Join a Kurum'),
+                  child: Text('Bir Kuruma Katıl'),
                 ),
                 const PopupMenuItem<String>(
                   value: 'signOut',
-                  child: Text('Sign Out'),
+                  child: Text('Çıkış'),
                 ),
                 const PopupMenuItem<String>(
                   value: 'ayarlar',

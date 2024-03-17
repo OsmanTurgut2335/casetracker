@@ -196,7 +196,6 @@ class _MyHomePageState extends State<MyHomePage> {
       child: Scaffold(
         backgroundColor: Colors.grey[350],
         appBar: AppBar(
-
           title: const Text("Bireysel Ekranı"),
           actions: [
             PopupMenuButton<String>(
@@ -209,7 +208,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 return [
                   const  PopupMenuItem(
                     value: 'signOut',
-                    child: Text('Sign Out'),
+                    child: Text('Çıkış'),
                   ),
                 ];
               },
@@ -217,39 +216,41 @@ class _MyHomePageState extends State<MyHomePage> {
           ],
           backgroundColor: Colors.grey, // Set app bar background color
           elevation: 4, // Set the elevation for a shadow effect
-          shape: const UnderlineInputBorder(
-
-          ),
+          shape: const UnderlineInputBorder(),
           // ... other properties
         ),
-        body: Column(
-          children: [
-            _buildTabBar(),
-            _currentPage == 0 ? _buildSearchBar() : SizedBox(),
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentPage = index;
-                    if (index == 1) {
-                      _selectedDay = DateTime.now();
-                      _fetchTasksForSelectedDay(_selectedDay);
-                    }
-                  });
-                },
-                children: [
-                  Container(
-                    child: _buildPage(filteredItems.isNotEmpty ? filteredItems : Globals.itemsList[0]),
-                  ),
-                  _buildCalendarPage(),
-                ],
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              _buildTabBar(),
+              _currentPage == 0 ? _buildSearchBar() : const SizedBox(),
+              SizedBox(
+                height: MediaQuery.of(context).size.height - kToolbarHeight - MediaQuery.of(context).padding.top - kBottomNavigationBarHeight,
+                child: PageView(
+                  controller: _pageController,
+                  onPageChanged: (index) {
+                    setState(() {
+                      _currentPage = index;
+                      if (index == 1) {
+                        _selectedDay = DateTime.now();
+                        _fetchTasksForSelectedDay(_selectedDay);
+                      }
+                    });
+                  },
+                  children: [
+                    Container(
+                      child: _buildPage(filteredItems.isNotEmpty ? filteredItems : Globals.itemsList[0]),
+                    ),
+                   Container(
+                    child: _buildCalendarPage(),
+                 ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-        floatingActionButton:
-        _currentPage == 0 ? _buildFloatingButton(context) : null,
+        floatingActionButton: _currentPage == 0 ? _buildFloatingButton(context) : null,
       ),
     );
   }
@@ -261,8 +262,8 @@ class _MyHomePageState extends State<MyHomePage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildTabItem("First Screen", 0),
-          _buildTabItem("Second Screen", 1),
+          _buildTabItem("Liste Görünümü", 0),
+          _buildTabItem("Takvim Görünümü", 1),
         ],
       ),
     );
@@ -296,7 +297,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
 
-
   Widget _buildPage(List<Item> items) {
     items.sort((a, b) => a.date.compareTo(b.date));
 
@@ -305,73 +305,76 @@ class _MyHomePageState extends State<MyHomePage> {
       children: [
         RefreshIndicator(
           onRefresh: _pullRefresh,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Column(
-              children: [
-                if (items.isEmpty)
-                  const Center(
-                    child:  Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text(
-                        'No tasks for now.',
-                        style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  )
-                else
-                  for (final item in items)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 5.0),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8.0),
-                          border: Border.all(
-                            color: Colors.lime[400] ?? Colors.green,
-                            width: 4.0,
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height - kToolbarHeight - MediaQuery.of(context).padding.top - kBottomNavigationBarHeight,
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    if (items.isEmpty)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Text(
+                            'No tasks for now.',
+                            style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey[600] ?? Colors.grey,
-                              spreadRadius: 1,
-                              blurRadius: 4,
-                            ),
-                          ],
                         ),
-                        child: ListTile(
-                          title: Text(
-                            '${item.name} - ${_formatDate(item.date)}',
-                            style: const TextStyle(
-                              color: Colors.black,
+                      )
+                    else
+                      for (final item in items)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 5.0),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8.0),
+                              border: Border.all(
+                                color: Colors.lime[400] ?? Colors.green,
+                                width: 4.0,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey[600] ?? Colors.grey,
+                                  spreadRadius: 1,
+                                  blurRadius: 4,
+                                ),
+                              ],
                             ),
-                          ),
-                          subtitle: Text(
-                           _calculateDaysLeft(item.date),
-                            style: const TextStyle(
-                              color: Colors.black,
-                            ),
-                          ),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => DetailsPage(
-                                  title: "Screen ${_currentPage + 1}",
-                                  item: item.name,
-                                  description: item.description ?? "",
-                                  itemDate: item.date,
-                                  onRemove: () {
-                                    _removeItem(item);
-                                  },
+                            child: ListTile(
+                              title: Text(
+                                '${item.name} - ${_formatDate(item.date)}',
+                                style: const TextStyle(
+                                  color: Colors.black,
                                 ),
                               ),
-                            );
-                          },
+                              subtitle: Text(
+                                _calculateDaysLeft(item.date),
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                ),
+                              ),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => DetailsPage(
+                                      title: "Screen ${_currentPage + 1}",
+                                      item: item.name,
+                                      description: item.description ?? "",
+                                      itemDate: item.date,
+                                      onRemove: () {
+                                        _removeItem(item);
+                                      },
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-              ],
-            ),
+                  ],
+                ),
+              ),
+
           ),
         ),
       ],
@@ -385,12 +388,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
     tasksMapForMonth.forEach((date, tasks) {
       String formattedDate = DateFormat("yyyy-MM-dd").format(date);
-      // Check if there is already an event for this date
       if (!events.containsKey(formattedDate)) {
-        // If no event exists, create a new list with one event
         events[formattedDate] = [];
       }
-      // Filter out expired tasks
       List<Task> nonExpiredTasks = tasks.where((task) => !task.date.isBefore(DateTime.now())).toList();
       if (nonExpiredTasks.isNotEmpty) {
         events[formattedDate]!.add(Event(tasks.first.details));
@@ -403,54 +403,49 @@ class _MyHomePageState extends State<MyHomePage> {
       return events[formattedStr] ?? [];
     }
 
-    return Column(
-      children: [
-        TableCalendar(
-          focusedDay: _selectedDay,
-          firstDay: DateTime.utc(2020, 1, 1),
-          lastDay: DateTime.utc(2030, 12, 31),
-          calendarStyle: const CalendarStyle(
-            markersAlignment: Alignment.bottomCenter,
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          TableCalendar(
+
+            focusedDay: _selectedDay,
+            firstDay: DateTime.utc(2020, 1, 1),
+            lastDay: DateTime.utc(2030, 12, 31),
+            calendarStyle: const CalendarStyle(
+              markersAlignment: Alignment.bottomCenter,
+            ),
+            eventLoader: getMyEvents,
+            selectedDayPredicate: (day) {
+              return isSameDay(_selectedDay, day);
+            },
+            onDaySelected: (selectedDay, focusedDay) async {
+              setState(() {
+                _selectedDay = selectedDay;
+              });
+              await _fetchTasksForSelectedDay(selectedDay);
+            },
           ),
-          eventLoader: getMyEvents,
-          selectedDayPredicate: (day) {
-            // Check if the provided day is the same as the selected day
-            return isSameDay(_selectedDay, day);
-          },
-          onDaySelected: (selectedDay, focusedDay) async {
-            setState(() {
-              _selectedDay = selectedDay;
-            });
-            // Fetch tasks for the selected day from the database
-            await _fetchTasksForSelectedDay(selectedDay);
-          },
-        ),
-        const SizedBox(height: 16),
-        if (tasksMap[_selectedDay] != null && tasksMap[_selectedDay]!.isNotEmpty)
-          Expanded(
-            child: ListView(
+          const SizedBox(height: 16),
+          if (tasksMap[_selectedDay] != null && tasksMap[_selectedDay]!.isNotEmpty)
+            ListView(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
               children: [
-                Text('Tasks for ${_formatDate(_selectedDay)}:'),
+                Text(' ${_formatDate(_selectedDay)} tarihi için görevler:'),
                 for (final task in tasksMap[_selectedDay]!)
                   GestureDetector(
                     onTap: () async {
-                      // Fetch the current authenticated user
                       User? user = FirebaseAuth.instance.currentUser;
-
-                      // Print statement to check if user is null
                       print("Current user: $user");
 
                       if (user != null) {
                         String? taskKey = Globals.taskKeysByName[task.details];
-
-                        // Update the reference to include the user's UID
                         DatabaseReference userTaskReference = firebaseRef
                             .child('users')
                             .child(user.uid)
                             .child('tasks')
                             .child(taskKey!);
 
-                        // Perform asynchronous work outside of setState
                         _fetchAndUpdateState(userTaskReference);
                       }
                     },
@@ -458,7 +453,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       height: 50,
                       margin: const EdgeInsets.symmetric(vertical: 8.0),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(25.0), // Half of the height to make it round
+                        borderRadius: BorderRadius.circular(25.0),
                         gradient: LinearGradient(
                           colors: [
                             Colors.cyan[900] ?? Colors.cyan,
@@ -467,7 +462,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                       ),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(25.0), // Half of the height to make it round
+                        borderRadius: BorderRadius.circular(25.0),
                         child: ListTile(
                           title: Text(
                             task.details,
@@ -479,19 +474,15 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                       ),
                     ),
-
                   ),
               ],
-            ),
-          )
-        else
-          Text('No tasks for ${_formatDate(_selectedDay)}'),
-      ],
+            )
+          else
+            Text('${_formatDate(_selectedDay)} tarihinde görev yok '),
+        ],
+      ),
     );
   }
-
-
-
 
 
 
@@ -505,7 +496,7 @@ class _MyHomePageState extends State<MyHomePage> {
           _filterItems(value);
         },
         decoration: const InputDecoration(
-          hintText: 'Search...',
+          hintText: 'Görev Ara...',
           prefixIcon: Icon(Icons.search),
         ),
       ),
@@ -819,9 +810,9 @@ class _MyHomePageState extends State<MyHomePage> {
     final daysLeft = daysBetween(currentDate, date);
 
     if (daysLeft == 0) {
-      return 'Today';
+      return 'Bugün';
     }else if(daysLeft<1){
-       return 'Expired';
+       return 'Süresi Geçti';
     }
     else {
       return '$daysLeft Gün Kaldı';

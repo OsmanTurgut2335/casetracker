@@ -45,79 +45,81 @@ class _NewItemScreenState extends State<NewItemScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: const Text('New Item'),
+        title: const Text('Yeni Görev Ekranı'),
         backgroundColor: Colors.grey,
         elevation: 4,
         shape: const UnderlineInputBorder(),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildItemNameField(),
-            const SizedBox(height: 16),
-            _buildDescriptionField(),
-            const SizedBox(height: 16),
-            _buildDueDateSelector(),
-            const SizedBox(height: 8),
-            Column(
-              children: [
-                Visibility(
-                  visible: widget.showRow, // Control visibility based on the showRow flag
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Checkbox(
-                        value: _shareWithOrganization,
-                        onChanged: !_isUserKurumsalMember
-                            ? null
-                            : (value) {
-                          setState(() {
-                            _shareWithOrganization = value!;
-                          });
-                        },
-                      ),
-                      const Text('Kurumla Paylaş'),
-                    ],
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildItemNameField(),
+              const SizedBox(height: 16),
+              _buildDescriptionField(),
+              const SizedBox(height: 16),
+              _buildDueDateSelector(),
+              const SizedBox(height: 8),
+              Column(
+                children: [
+                  Visibility(
+                    visible: widget.showRow, // Control visibility based on the showRow flag
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Checkbox(
+                          value: _shareWithOrganization,
+                          onChanged: !_isUserKurumsalMember
+                              ? null
+                              : (value) {
+                            setState(() {
+                              _shareWithOrganization = value!;
+                            });
+                          },
+                        ),
+                        const Text('Kurumla Paylaş'),
+                      ],
+                    ),
                   ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    if (_validateAndSave()) {
-                      final newItem = Item(
-                        name: _itemNameController.text,
-                        description: _descriptionController.text,
-                        date: _selectedDueDate,
-                      );
-                      final newKurumsalItem=KurumsalItem(
-                        name: _itemNameController.text,
-                        description: _descriptionController.text,
-                        date: _selectedDueDate,
-                        username: '',
-                      );
-
-                      // Check the source class and define behavior accordingly
-                      if (widget.changeBehavior == 1) {
-                        // Behavior for when coming from class A
-                        // For example, pop with a different value
-                        Navigator.pop(context, Tuple2(newItem, _shareWithOrganization));
-
-                      } else {
-                        // Behavior for when coming from other classes
-                        // For example, pop normally without sharing with organization
-                        Navigator.pop(context, newKurumsalItem);
+                  ElevatedButton(
+                    onPressed: () {
+                      if (_validateAndSave()) {
+                        final newItem = Item(
+                          name: _itemNameController.text,
+                          description: _descriptionController.text,
+                          date: _selectedDueDate,
+                        );
+                        final newKurumsalItem=KurumsalItem(
+                          name: _itemNameController.text,
+                          description: _descriptionController.text,
+                          date: _selectedDueDate,
+                          username: '',
+                        );
+        
+                        // Check the source class and define behavior accordingly
+                        if (widget.changeBehavior == 1) {
+                          // Behavior for when coming from class A
+                          // For example, pop with a different value
+                          Navigator.pop(context, Tuple2(newItem, _shareWithOrganization));
+        
+                        } else {
+                          // Behavior for when coming from other classes
+                          // For example, pop normally without sharing with organization
+                          Navigator.pop(context, newKurumsalItem);
+                        }
                       }
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                    ),
+                    child: const Text('Kaydet'),
                   ),
-                  child: const Text('Save'),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -127,24 +129,27 @@ class _NewItemScreenState extends State<NewItemScreen> {
     return Column(
       children: [
         SizedBox(
-          height: 200, // Set the height of the time slots
+          height: 175, // Set the height of the time slots
           child: ListView(
             scrollDirection: Axis.vertical, // Set the scroll direction to vertical
             children: [
-              for (final slot in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 30, 45])
+              for (final slot in [1, 3, 5, 7, 10, 14, 15, 30, 45])
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: ElevatedButton(
                     onPressed: () {
                       setState(() {
+
                         _selectedDueDate = DateTime.now().add(Duration(days: slot));
                       });
                     },
                     style: ElevatedButton.styleFrom(
+                      maximumSize: const Size.fromHeight(40),
+                    //  padding: const EdgeInsets.symmetric(horizontal: 1 ,vertical: 1), // Adjust button padding
                       backgroundColor: Colors.grey[400] ?? Colors.grey, // Set button color
                     ),
                     child: Text(
-                      '$slot days',
+                      '$slot gün',
                       style: const TextStyle(
                         color: Colors.black, // Set text color
                       ),
@@ -155,13 +160,16 @@ class _NewItemScreenState extends State<NewItemScreen> {
           ),
         ),
         const SizedBox(height: 16),
+
+        const SizedBox(height: 5),
         const Text(
-          'Due Date:',
+          'Bitiş Tarihi:',
           style: TextStyle(
             color: Colors.black, // Set text color
           ),
         ),
-        const SizedBox(height: 16),
+
+        const SizedBox(height: 5),
         Row(
 mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -189,6 +197,13 @@ mainAxisAlignment: MainAxisAlignment.center,
           ],
 
         ),
+        const Text(
+          'Tarihe basarak takvim üzerinden tarih seçimi yapabilirsiniz',
+          style: TextStyle(
+              color: Colors.black,
+              fontSize: 10
+          ),
+        ),
       ],
     );
   }
@@ -198,9 +213,10 @@ mainAxisAlignment: MainAxisAlignment.center,
       margin: const EdgeInsets.symmetric(vertical: 10),
       child: TextField(
         controller: _itemNameController,
+        autofillHints: const [AutofillHints.nickname],
         maxLength: 50,
         decoration: InputDecoration(
-          labelText: 'Item Name',
+          labelText: 'Görev Adı',
           labelStyle: const TextStyle(
             color: Colors.black,
           ),
@@ -225,7 +241,7 @@ mainAxisAlignment: MainAxisAlignment.center,
         maxLength: 200,
         maxLines: 3,
         decoration: InputDecoration(
-          labelText: 'Description',
+          labelText: 'Açıklama',
           labelStyle: const TextStyle(
             color: Colors.black,
           ),
@@ -247,12 +263,12 @@ mainAxisAlignment: MainAxisAlignment.center,
     final description = _descriptionController.text;
 
     if (itemName.length > 50) {
-      _showErrorDialog('Item name cannot exceed 50 characters.');
+      _showErrorDialog('Görev adı 50 karakteri geçemez.');
       return false;
     }
 
     if (description.length > 200) {
-      _showErrorDialog('Description cannot exceed 200 characters.');
+      _showErrorDialog('Açıklama 200 karakteri geçemez.');
       return false;
     }
 
@@ -264,14 +280,14 @@ mainAxisAlignment: MainAxisAlignment.center,
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Error'),
+          title: const Text('Hata'),
           content: Text(message),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
               },
-              child:const  Text('OK'),
+              child:const  Text('Tamam'),
             ),
           ],
         );
