@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "264905641690",
+    "project_id": "casetracker-4a2ac",
+    "storage_bucket": "casetracker-4a2ac.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:264905641690:android:4edf172fc702700e4cdfe3",
+        "android_client_info": {
+          "package_name": "com.example.casetracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQf6vMtQMHhUINQ-mj5WBUGR37_RdtxeI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

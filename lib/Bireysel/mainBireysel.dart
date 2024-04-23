@@ -161,7 +161,7 @@ class _MyHomePageState extends State<MyHomePage> {
             date: DateTime.parse(value['date']),
           );
           Globals.taskKeysByName[item.name] = key;
-
+      print("TASK KEYİ :  $key");
           Globals.itemsList[0].add(item);
         });
 
@@ -573,7 +573,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
   void _navigateToDetailsPage(Item item) {
-    Navigator.pushReplacement(
+    Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => DetailsPage(
@@ -660,6 +660,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     'name': newItem.name,
                     'description': newItem.description,
                     "date": newItem.date.toUtc().toIso8601String(),
+                    "taskId": newTaskReference.key,
                   };
 
                   if (shareWithOrganization) {
@@ -668,7 +669,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     }, SetOptions(merge: true));
                     print('Array field updated/created successfully!');
                   }
-
+                  Globals.kurumsalTaskKeysByName[newItem.name] = newTaskReference.key!;
 
                 } else {
                   print('Document not found with the specified value.');

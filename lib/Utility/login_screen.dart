@@ -91,12 +91,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       // Check if the user is not null (exists)
                       if (_auth.currentUser != null) {
                         // If the sign-in is successful and the user exists, navigate to the IntroScreen
-                        if (mounted) {
+
                           navigatorState.pushReplacement(
                             MaterialPageRoute(
                                 builder: (context) => HomeScreen()),
                           );
-                        }
+
                       }
                     } catch (e) {
                       // Handle login failure
@@ -156,18 +156,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       // Show a snackbar on successful user creation
                       scaffoldMessenger.showSnackBar(
                         const SnackBar(
-                          content: Text(
-                            'Kullanıcı başarıyla oluşturuldu. Lütfen email adresinizi doğrulama için kontrol edin.',
-                          ),
+                            content: Text(
+                              'Kullanıcı başarıyla oluşturuldu. Lütfen email adresinizi doğrulama için kontrol edin.',
+                            ),
                             duration: Duration(seconds: 2)
                         ),
                       );
 
-                      // Comment out the navigation code
-                      // navigatorState.pushReplacement(
-                      //   MaterialPageRoute(
-                      //       builder: (context) => HomeScreen()),
-                      // );
                     } catch (e) {
                       // Print the error to the console for debugging
                       // Handle sign-up failure

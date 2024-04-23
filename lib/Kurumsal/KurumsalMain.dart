@@ -146,9 +146,12 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
 
-  void _fetchKurumsalItemsFromDatabase() async {
+  Future<void> _fetchKurumsalItemsFromDatabase() async {
+
     // Clear the existing kurumsalItemsList
     Globals.kurumsalItemsList[0].clear();
+    Globals.kurumsalTaskKeysByName.clear();
+
 
     User? user = FirebaseAuth.instance.currentUser;
 
@@ -157,12 +160,12 @@ class _MyHomePageState extends State<MyHomePage> {
       // Access Firestore
       FirebaseFirestore firestore = FirebaseFirestore.instance;
 
+
       try {
         // Get the 'invitationCode' from Realtime Database
         String invitationCode = await _getInvitationCodeFromDatabase(user.uid);
         String kurumName = await _getKurumNameFromDatabase(user.uid);
         String documentName = " $kurumName - $invitationCode ";
-        // Find the document in 'kurumlar' collection where 'name' contains the invitation code
 
 
         QuerySnapshot querySnapshot = await firestore
@@ -180,13 +183,18 @@ class _MyHomePageState extends State<MyHomePage> {
 
           if (tasks != null) {
 
+
             for (var taskData in tasks) {
               // Extract data from each task item
               String name = taskData['name'];
               String? description = taskData['description'];
               DateTime date = DateTime.parse(taskData['date']);
                username = taskData['username'];
-              print("YARRRRRRRRRAK");
+             String taskId = taskData["taskId"];
+               //MMAYBE AD A TASK ID SO THAT I CAN FETCH IT FROM HERE ?
+
+
+
               // Create a KurumsalItem and add it to the kurumsalItemsList
 
 
@@ -197,12 +205,12 @@ class _MyHomePageState extends State<MyHomePage> {
                 username: username,
               );
               print("Kurumsal Item Details : ${kurumsalItem.username} ");
-
-              // Add the KurumsalItem to the kurumsalItemsList at the determined index
               Globals.kurumsalItemsList[0].add(kurumsalItem);
+              Globals.kurumsalTaskKeysByName[kurumsalItem.name] = taskId;
             }
+
             setState(() {});
-            // Now kurumsalItemsList should contain the items from the 'tasks' array
+
           }
         } else {
           // Handle the case where the document is not found
@@ -261,7 +269,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     return WillPopScope(
       onWillPop: () async {
-        _fetchKurumsalItemsFromDatabase;
+        await _fetchKurumsalItemsFromDatabase();
         setState(() {
           Globals.kurumsalItemsList[0].sort((a, b) => a.date.compareTo(b.date));
         });
@@ -352,6 +360,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         onPressed: () async {
                           final newItem = await _navigateToNewItemScreen(context);
                           _addItem(newItem as KurumsalItem);
+
                         },
                         backgroundColor: Colors.blue,
                         child: const Icon(Icons.add),
@@ -554,38 +563,120 @@ class _MyHomePageState extends State<MyHomePage> {
                 for (final task in tasksMap[_selectedDay]!)
                   GestureDetector(
                     onTap: ()  async {
-                      // Access Firestore
-                      FirebaseFirestore firestore = FirebaseFirestore.instance;
-
-
-
-                        QuerySnapshot querySnapshot = await firestore
-                            .collection('kurumlar')
-                            .where(FieldPath.documentId, isEqualTo: widget.documentName)
-                            .get();
-
-
-
-
-
-
-
-                      // Fetch the current authenticated user
                       User? user = FirebaseAuth.instance.currentUser;
 
-                      // Print statement to check if user is null
+                      FirebaseFirestore firestore = FirebaseFirestore.instance;
+
                       print("Current user: $user");
+                      try {
+                        if (user != null) {
+                          final firebaseRef = FirebaseDatabase(
+                            databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
+                          ).reference();
+                          QuerySnapshot querySnapshot = await firestore
+                              .collection('kurumlar')
+                              .where(FieldPath.documentId, isEqualTo: widget.documentName)
+                              .get();
+                          print("Here is the task key : ${Globals.taskKeysByName.length}");
+                          String? taskKey = Globals.kurumsalTaskKeysByName[task.details];
 
-                      if (user != null) {
-                        String? taskKey = Globals.taskKeysByName[task.details];
-                        DatabaseReference userTaskReference = firebaseRef
-                            .child('users')
-                            .child(user.uid)
-                            .child('tasks')
-                            .child(taskKey!);
+                          // Check if any document is found
+                          if (querySnapshot.docs.isNotEmpty) {
 
-                        _fetchAndUpdateState(userTaskReference);
+                            for (DocumentSnapshot doc in querySnapshot.docs) {
+
+                              if (doc.id == widget.documentName) {
+                                // Access the document data
+                                Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+
+                                print("Here is the task key : $taskKey");
+
+                                // Update the reference to include the user's UID
+                                DatabaseReference userTaskReference = firebaseRef
+                                    .child('users')
+                                    .child(user.uid)
+                                    .child("tasks")
+                                    .child(taskKey!);
+
+                                print("KANKAAAA $taskKey");
+
+                                // Get the 'tasks' array from the document
+                                List<dynamic>? tasks = data['tasks'];
+
+                                // Fetch the details of the task
+                                final snapshot = await userTaskReference.get();
+
+                                if (tasks != null) {
+                                  // Check if the snapshot value is not null and is of the expected type
+                                  if (snapshot.value is Map<dynamic, dynamic>?) {
+
+                                    // Access the data from the snapshot
+                                    Map<dynamic, dynamic>? taskData = snapshot.value as Map<dynamic, dynamic>?;
+                                    for (var taskData in tasks) {
+                                      if (taskData != null) {
+
+                                        // Extract data from each task item
+                                        String name = taskData['name'];
+
+                                        KurumsalItem selectedKurumsalItem = KurumsalItem(
+                                          name: taskData['name'],
+                                          description: taskData['description'],
+                                          date: DateTime.parse(taskData['date']),
+                                          username: taskData['username'],
+                                        );
+
+                                        DateTime date = DateTime.parse(taskData['date']);
+
+                                        if (task.details == name && task.date == date) {
+                                          String newUsername = taskData['username'];
+
+                                            KurumsalItem item = KurumsalItem(name: name, date: date, username: username);
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => KurumsalDetailsPage(
+                                                  title: "Screen ${_currentPage + 1}",
+                                                  item: name,
+                                                  description: task.details ?? "",
+                                                  itemDate: task.date,
+                                                  username: newUsername,
+                                                  onRemove: () {
+                                                    _removeItem(item);
+                                                  },
+                                                  documentName: widget.documentName, // Pass it here
+                                                ),
+                                              ),
+                                            );
+
+                                        }
+
+                                        // Use the 'selectedItem' instance as needed
+                                        // Navigate to the DetailsPage and pass the selected item
+                                        //_navigateToDetailsPage(selectedKurumsalItem);
+
+                                      }
+                                      setState(() {});
+                                      // Now kurumsalItemsList should contain the items from the 'tasks' array
+                                    }
+                                  } else {
+                                    // Handle the case where the snapshot value is not of the expected type
+                                  }
+                                } else {
+                                  // Handle the case where tasks is null
+                                }
+                                break; // Exit loop since we found the matching document
+                              }
+                            }
+
+                          } else {
+                            // Handle the case where the document is not found
+                            print('Document not found with the specified value.');
+                          }
+                        }
+                      } catch (e) {
+                        print("Error: $e");
                       }
+
                     },
                     child: Container(
                       height: 50,
@@ -682,8 +773,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _addItem(KurumsalItem? kurumsalItem){
-    //BURADA FİRESTOREA EKLERKEN USERNAME İ YANLIŞ EKLİYOR.ZATEN BU EKRANDAN Bİ ADD ITEM OLUCAKSA
-    //BİR TANE USERNAME OLUR O DA YÖNETİCİNİN . ORDAN DA GİDİLEBİLİR.
+
     if (kurumsalItem != null) {
 
       Globals.kurumsalItemsList[0].add(kurumsalItem);
@@ -716,20 +806,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 if (querySnapshot.docs.isNotEmpty) {
                   DocumentReference documentReference =
                       querySnapshot.docs.first.reference;
-                  Map<String, dynamic> userData = {
-                    'username': actualUsername, // replace with actual username
-                    'name': kurumsalItem.name,
-                    'description': kurumsalItem.description,
-                    "date": kurumsalItem.date.toUtc().toIso8601String(),
-                  };
 
 
-                    documentReference.set({
-                      'tasks': FieldValue.arrayUnion([userData]),
-                    }, SetOptions(merge: true));
-                    print('Array field updated/created successfully!');
-
-                    // Add the item to user's tasks
+                    // Add the item to user's tasks on the realtime database
                     DatabaseReference userTaskReference =
                     firebaseRef.child('users').child(user.uid).child('tasks');
                     Map<String, dynamic> newTaskData = {
@@ -742,8 +821,25 @@ class _MyHomePageState extends State<MyHomePage> {
                     DatabaseReference newTaskReference =
                     userTaskReference.push();
                     newTaskReference.set(newTaskData);
-                    Globals.taskKeysByName[kurumsalItem.name] = newTaskReference.key!;
 
+                  print("new task reference $newTaskReference");
+                  Map<String, dynamic> userData = {
+                    'username': actualUsername, // replace with actual username
+                    'name': kurumsalItem.name,
+                    'description': kurumsalItem.description,
+                    "date": kurumsalItem.date.toUtc().toIso8601String(),
+                    "taskId": newTaskReference.key,
+                  };
+
+
+                  documentReference.set({
+                    'tasks': FieldValue.arrayUnion([userData]),
+                  }, SetOptions(merge: true));
+                  print('Array field updated/created successfully!');
+
+
+                    Globals.taskKeysByName[kurumsalItem.name] = newTaskReference.key!;
+                  Globals.kurumsalTaskKeysByName[kurumsalItem.name] = newTaskReference.key!;
                 } else {
                   print('Document not found with the specified value.');
                 }
@@ -939,6 +1035,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     setState(() {
       Globals.itemsList[0].remove(item);
+      Globals.kurumsalItemsList[0].remove(item);
     });
   }
 
