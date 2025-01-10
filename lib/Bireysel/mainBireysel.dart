@@ -559,7 +559,6 @@ class _MyHomePageState extends State<MyHomePage> {
         }
       }
     }
-    print("RABİA ALLAHINI SİKEYİM: $tasksMapForMonth");
     setState(() {});
   }
 
