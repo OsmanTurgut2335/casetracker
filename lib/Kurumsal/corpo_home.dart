@@ -1,6 +1,7 @@
 import 'dart:core';
 import 'dart:ffi';
-import 'package:casetracker/Kurumsal/KurumsalDetails.dart';
+import 'package:casetracker/Kurumsal/corpo_details.dart';
+import 'package:casetracker/core/util/corpoUtil.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -11,7 +12,6 @@ import 'package:intl/intl.dart';
 import 'package:share/share.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:firebase_core/firebase_core.dart';
-import '../Bireysel/DetailsPage.dart';
 
 import '../Bireysel/newItemScreen.dart';
 import '../Utility/firebase_options.dart';
@@ -97,8 +97,7 @@ class Event {
   String toString() => title;
 }
 class _MyHomePageState extends State<MyHomePage> {
-  late Stream<DocumentSnapshot> _stream;
-  late Widget _floatingActionButton;
+
 
   final PageController _pageController = PageController();
   int _currentPage = 0;
@@ -108,6 +107,7 @@ class _MyHomePageState extends State<MyHomePage> {
   late String username;
   late String actualUsername;
 
+  final CorpoUtil corpoUtil = CorpoUtil();
   Map<DateTime, List<Task>> tasksMapForMonth = {};
   bool isFoundingMember = false;
   final firebaseRef = FirebaseDatabase(
@@ -117,7 +117,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    _fetchKurumsalItemsFromDatabase();
+    corpoUtil.fetchKurumsalItemsFromDatabase();
     getUserUsername();
   }
 
@@ -132,7 +132,7 @@ class _MyHomePageState extends State<MyHomePage> {
         if (snapshot.exists && snapshot.value != null) {
           String username = snapshot.value.toString(); // Convert the value to a String
           actualUsername= username;
-          print("SEKS RABİA SEKSS  $actualUsername");
+
           // Here you can use the username value as needed.
         } else {
           print("Username not found or null.");
@@ -146,103 +146,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
 
-  void _fetchKurumsalItemsFromDatabase() async {
-    // Clear the existing kurumsalItemsList
-    Globals.kurumsalItemsList[0].clear();
-
-    User? user = FirebaseAuth.instance.currentUser;
-
-    if (user != null) {
-
-      // Access Firestore
-      FirebaseFirestore firestore = FirebaseFirestore.instance;
-
-      try {
-        // Get the 'invitationCode' from Realtime Database
-        String invitationCode = await _getInvitationCodeFromDatabase(user.uid);
-        String kurumName = await _getKurumNameFromDatabase(user.uid);
-        String documentName = " $kurumName - $invitationCode ";
-        // Find the document in 'kurumlar' collection where 'name' contains the invitation code
 
 
-        QuerySnapshot querySnapshot = await firestore
-            .collection('kurumlar')
-            .where(FieldPath.documentId, isEqualTo: documentName)
-            .get();
-
-// Check if any document is found
-        if (querySnapshot.docs.isNotEmpty) {
-          // Access the first document's data
-          Map<String, dynamic> data = querySnapshot.docs.first.data() as Map<String, dynamic>;
-
-          // Get the 'tasks' array from the document
-          List<dynamic>? tasks = data['tasks'];
-
-          if (tasks != null) {
-
-            for (var taskData in tasks) {
-              // Extract data from each task item
-              String name = taskData['name'];
-              String? description = taskData['description'];
-              DateTime date = DateTime.parse(taskData['date']);
-               username = taskData['username'];
-              print("YARRRRRRRRRAK");
-              // Create a KurumsalItem and add it to the kurumsalItemsList
-
-
-              KurumsalItem kurumsalItem = KurumsalItem(
-                name: name,
-                description: description,
-                date: date,
-                username: username,
-              );
-              print("Kurumsal Item Details : ${kurumsalItem.username} ");
-
-              // Add the KurumsalItem to the kurumsalItemsList at the determined index
-              Globals.kurumsalItemsList[0].add(kurumsalItem);
-            }
-            setState(() {});
-            // Now kurumsalItemsList should contain the items from the 'tasks' array
-          }
-        } else {
-          // Handle the case where the document is not found
-          print('Document not found with the specified value.');
-        }
-
-      } catch (e) {
-        print("Error: $e");
-      }
-    }
-  }
-// Helper method to get 'invitationCode' from Realtime Database
-  Future<String> _getInvitationCodeFromDatabase(String userId) async {
-    DatabaseReference firebaseRef = FirebaseDatabase(
-      databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
-    ).reference();
-
-    // Reference to 'invitationCode' field in Realtime Database
-    DatabaseReference userTaskReference = firebaseRef.child('users').child(userId).child('kurum').child('invitationCode');
-
-    // Get the 'invitationCode' value
-    DataSnapshot snapshot = await userTaskReference.get();
-
-    return snapshot.value.toString();
-  }
-
-  // Helper method to get 'name' from Realtime Database
-  Future<String> _getKurumNameFromDatabase(String userId) async {
-    DatabaseReference firebaseRef = FirebaseDatabase(
-      databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
-    ).reference();
-
-    // Reference to 'invitationCode' field in Realtime Database
-    DatabaseReference userTaskReference = firebaseRef.child('users').child(userId).child('kurum').child('name');
-
-    // Get the 'invitationCode' value
-    DataSnapshot snapshot = await userTaskReference.get();
-
-    return snapshot.value.toString();
-  }
 
 
   void _signOut() async {
@@ -261,7 +166,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     return WillPopScope(
       onWillPop: () async {
-        _fetchKurumsalItemsFromDatabase;
+        corpoUtil.fetchKurumsalItemsFromDatabase();
         setState(() {
           Globals.kurumsalItemsList[0].sort((a, b) => a.date.compareTo(b.date));
         });
@@ -360,7 +265,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   }
                 }
               } else {
-                print("DAYAAAN BU BADİRELERDE GEÇİCİ BAK İNAN $yarrak");
+
               }
               return const SizedBox();
             }
@@ -766,7 +671,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void _fetchAndUpdateState(DatabaseReference userTaskReference) async {
     // Fetch the details of the task
     final snapshot = await userTaskReference.get();
-    print("SEKS ECE SEKS ");
+
     // Check if the snapshot value is not null and is of the expected type
     if (snapshot.value is Map<dynamic, dynamic>?) {
       // Access the data from the snapshot
@@ -782,7 +687,7 @@ class _MyHomePageState extends State<MyHomePage> {
         );
 
         // Use the 'selectedItem' instance as needed
-        print("SEKS ECE SEKS ");
+
         // Navigate to the DetailsPage and pass the selected item
         _navigateToDetailsPage(selectedItem);
       }
@@ -856,7 +761,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _pullRefresh() async {
 
     setState(() {
-      _fetchKurumsalItemsFromDatabase();
+      corpoUtil.fetchKurumsalItemsFromDatabase();
     });
   }
 
@@ -898,13 +803,13 @@ class _MyHomePageState extends State<MyHomePage> {
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       String? documentName = widget.documentName; // Provide the document name here
-      print("YARRRRRRRRRAK");
+
       // Get the reference to the Firestore collection
       CollectionReference kurumlarCollection = FirebaseFirestore.instance.collection('kurumlar');
 
       // Get the document reference based on the document name
       DocumentReference documentRef = kurumlarCollection.doc(documentName);
-      print("YARRRRRRRRRAK");
+
       // Fetch the document snapshot
       DocumentSnapshot documentSnapshot = await documentRef.get();
 
@@ -912,7 +817,7 @@ class _MyHomePageState extends State<MyHomePage> {
       if (documentSnapshot.exists) {
         // Get the tasks array from the document
         List<dynamic>? tasks = (documentSnapshot.data() as Map<String, dynamic>?)?['tasks'];
-        print("YARRRRRRRRRAK");
+
 
         if (tasks != null) {
           // Create a copy of the tasks list to iterate over

@@ -2,7 +2,7 @@
 
 import 'dart:core';
 import 'dart:math';
-import 'package:casetracker/Kurumsal/KurumsalMain.dart';
+import 'package:casetracker/Kurumsal/corpo_home.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';

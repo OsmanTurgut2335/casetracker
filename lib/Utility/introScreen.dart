@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:casetracker/Bireysel/mainBireysel.dart' as Bireysel;
-import 'package:casetracker/Kurumsal/KurumsalMain.dart' as Kurumsal;
-import '../Kurumsal/KurumEkle.dart';
+import 'package:casetracker/Kurumsal/corpo_home.dart' as Kurumsal;
+import '../Kurumsal/add_corpo.dart';
 import 'package:app_settings/app_settings.dart';
 import 'login_screen.dart';
 class HomeScreen extends StatefulWidget {

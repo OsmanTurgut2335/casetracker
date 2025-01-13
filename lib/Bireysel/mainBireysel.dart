@@ -1,4 +1,5 @@
 import 'dart:core';
+import 'package:casetracker/core/util/util.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -91,6 +92,9 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+
+  final  util = Util();
+
   final PageController _pageController = PageController();
   int _currentPage = 0;
   Map<DateTime, List<Task>> tasksMap = {};
@@ -109,7 +113,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    _fetchDataFromDatabase();
+    util.fetchDataFromDatabase();
 
     User? user = FirebaseAuth.instance.currentUser;
     DatabaseReference userTaskReference3 = firebaseRef.child('users').child(user!.uid).child("username");
@@ -128,47 +132,9 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
 
-  Future<bool> isUserKurumsalMember(String userId) async {
-
-    DatabaseReference userTaskReference =
-    firebaseRef.child('users').child(userId).child("kurum");
-
-    DataSnapshot snapshot = await userTaskReference.get();
-
-    return snapshot.value != null;
-  }
-
-  Future<void> _fetchDataFromDatabase() async {
-    Globals.itemsList[0].clear();
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
 
 
-      // Update the reference to include the user's UID and fetch tasks from the "tasks" branch
-      DatabaseReference userTaskReference = firebaseRef.child('users').child(user.uid).child('tasks');
 
-      final snapshot = await userTaskReference.get();
-
-      if (snapshot.value is Map<dynamic, dynamic>) {
-        final Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
-
-        Globals.itemsList[0].clear();
-        Globals.taskKeysByName.clear();
-        data.forEach((key, value) {
-          final item = Item(
-            name: value['name'],
-            description: value['description'],
-            date: DateTime.parse(value['date']),
-          );
-          Globals.taskKeysByName[item.name] = key;
-
-          Globals.itemsList[0].add(item);
-        });
-
-        setState(() {});
-      }
-    }
-  }
 
 
 
@@ -187,7 +153,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        await _fetchDataFromDatabase();
+        await util.fetchDataFromDatabase();
         setState(() {
           Globals.itemsList[0].sort((a, b) => a.date.compareTo(b.date));
         });
@@ -559,14 +525,14 @@ class _MyHomePageState extends State<MyHomePage> {
         }
       }
     }
-    print("RABİA ALLAHINI SİKEYİM: $tasksMapForMonth");
+
     setState(() {});
   }
 
   Future<void> _pullRefresh() async {
 
     setState(() {
-      _fetchDataFromDatabase();
+      util.fetchDataFromDatabase();
     });
   }
 
@@ -698,7 +664,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void _fetchAndUpdateState(DatabaseReference userTaskReference) async {
     // Fetch the details of the task
     final snapshot = await userTaskReference.get();
-    print("SEKS ECE SEKS ");
+
     // Check if the snapshot value is not null and is of the expected type
     if (snapshot.value is Map<dynamic, dynamic>?) {
       // Access the data from the snapshot
@@ -713,7 +679,7 @@ class _MyHomePageState extends State<MyHomePage> {
         );
 
         // Use the 'selectedItem' instance as needed
-       print("SEKS ECE SEKS ");
+
         // Navigate to the DetailsPage and pass the selected item
         _navigateToDetailsPage(selectedItem);
       }
