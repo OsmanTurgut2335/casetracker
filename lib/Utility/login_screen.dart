@@ -4,10 +4,7 @@ import 'package:casetracker/product/authentication/view/reset_password_button.da
 import 'package:casetracker/product/constants/strings/login_strings.dart';
 import 'package:casetracker/product/widgets/sizedbox/custom_sized_box.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:email_validator/email_validator.dart';
+
 
 import '../product/authentication/view/login_button.dart';
 

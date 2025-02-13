@@ -1,0 +1,7 @@
+
+//LATER ON WİLL CHANGE THİS WİTH DEPENDENCY İNJECTİON
+
+
+class RepoInitialize{
+
+}

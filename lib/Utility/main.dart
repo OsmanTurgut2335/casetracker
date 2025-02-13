@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart'; // Import Firebase Core
 import 'firebase_options.dart';
-import 'introScreen.dart';
+import 'mainScreen.dart';
 import 'login_screen.dart'; // Import your LoginScreen
 
 void main() async {
