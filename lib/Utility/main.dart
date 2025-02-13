@@ -20,20 +20,22 @@ void main() async {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       home: AuthChecker(), // Use AuthChecker instead of HomeScreen directly
     );
   }
 }
 
 class AuthChecker extends StatelessWidget {
+  const AuthChecker({super.key});
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return CircularProgressIndicator(); // Loading indicator while checking authentication state
+          return const CircularProgressIndicator(); // Loading indicator while checking authentication state
         } else {
           if (snapshot.hasData) {
             // User is signed in, show HomeScreen

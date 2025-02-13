@@ -1,26 +1,26 @@
 
+import 'package:casetracker/product/authentication/view/create_user_button.dart';
+import 'package:casetracker/product/authentication/view/reset_password_button.dart';
+import 'package:casetracker/product/constants/strings/login_strings.dart';
+import 'package:casetracker/product/widgets/sizedbox/custom_sized_box.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'introScreen.dart'; // Import IntroScreen
 import 'package:email_validator/email_validator.dart';
+
+import '../product/authentication/view/login_button.dart';
 
 
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final DatabaseReference _databaseReference =
-  FirebaseDatabase(
-    databaseURL:
-    "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
-  ).reference();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -29,11 +29,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-    final navigatorState = Navigator.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Giriş Ekranı'),
+        title: const Text(LoginStrings.loginScreenTitle),
       ),
       body: Center(
         child: Padding(
@@ -44,171 +43,19 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 TextField(
                   controller: _emailController,
-                  decoration: const InputDecoration(labelText: 'Email'),
+                  decoration: const InputDecoration(labelText: LoginStrings.email),
                   autofillHints: const [AutofillHints.email],
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _passwordController,
-                  decoration: InputDecoration(
-                    labelText: 'Parola',
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _isPasswordVisible
-                            ? Icons.visibility
-                            : Icons.visibility_off,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _isPasswordVisible = !_isPasswordVisible;
-                        });
-                      },
-                    ),
-                  ),
-                  obscureText: !_isPasswordVisible,
-                ),
-                const SizedBox(height: 25),
-                ElevatedButton(
-                  onPressed: () async {
-                    // Validate the email address using EmailValidator
-                    if (!EmailValidator.validate(_emailController.text)) {
-                      scaffoldMessenger.showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                              'Yanlış email formatı.Lütfen geçerli bir email adresi girin.'),
-                        ),
-                      );
-                      return; // Stop further processing if the email is not valid
-                    }
+                CustomSizedBox().customSizedBox(16),
+                passwordTextField(),
+                CustomSizedBox().customSizedBox(25),
+             LoginButton(emailController: _emailController,passwordController: _passwordController,),
 
-                    try {
-                      // Try to sign in the user
-                      await _auth.signInWithEmailAndPassword(
-                        email: _emailController.text,
-                        password: _passwordController.text,
-                      );
-
-                      // Check if the user is not null (exists)
-                      if (_auth.currentUser != null) {
-                        // If the sign-in is successful and the user exists, navigate to the IntroScreen
-                        if (mounted) {
-                          navigatorState.pushReplacement(
-                            MaterialPageRoute(
-                                builder: (context) => HomeScreen()),
-                          );
-                        }
-                      }
-                    } catch (e) {
-                      // Handle login failure
-                      scaffoldMessenger.showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                              'Kullanıcı bulunamadı.Lütfen bilgilerinizi kontrol edin.'),
-                          duration: Duration(seconds: 2), // Set the duration to 2 seconds
-                        ),
-                      );
-                    }
-                  },
-                  child: const Text('Giriş Yap'),
-                ),
-                const SizedBox(height: 8),
-                ElevatedButton(
-                  onPressed: () async {
-                    // Validate the email address using EmailValidator
-                    if (!EmailValidator.validate(_emailController.text)) {
-                      scaffoldMessenger.showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                              'Yanlış email formatı.Lütfen geçerli bir email adresi girin.'),
-                        ),
-                      );
-                      return; // Stop further processing if the email is not valid
-                    }
-                    try {
-                      // Try to sign up the user
-                      await _auth.createUserWithEmailAndPassword(
-                        email: _emailController.text,
-                        password: _passwordController.text,
-                      );
-
-                      // Send email verification to the user
-                      await _auth.currentUser!.sendEmailVerification();
-
-                      // Update Firestore usernames collection
-                      await _firestore
-                          .collection('usernames')
-                          .doc('usernames')
-                          .update({
-                        'userList': FieldValue.arrayUnion([
-                          {'userid': _auth.currentUser!.uid, 'username': ''}
-                        ])
-                      });
-
-                      // Create user in the Realtime Database under _databaseReference.child('users')
-                      _databaseReference
-                          .child('users')
-                          .child(_auth.currentUser!.uid)
-                          .set({
-                        'email': _auth.currentUser!.email,
-                        // Add any other user-related information you want to store
-                      });
-
-                      // Show a snackbar on successful user creation
-                      scaffoldMessenger.showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Kullanıcı başarıyla oluşturuldu. Lütfen email adresinizi doğrulama için kontrol edin.',
-                          ),
-                            duration: Duration(seconds: 2)
-                        ),
-                      );
-
-                      // Comment out the navigation code
-                      // navigatorState.pushReplacement(
-                      //   MaterialPageRoute(
-                      //       builder: (context) => HomeScreen()),
-                      // );
-                    } catch (e) {
-                      // Print the error to the console for debugging
-                      // Handle sign-up failure
-                      scaffoldMessenger.showSnackBar(
-                        const SnackBar(
-                          content: Text('Giriş başarısız oldu. Lütfen tekrar deneyin.'),
-                        ),
-                      );
-                    }
-                  },
-                  child: const Text('Kullanıcı Oluştur'),
-                ),
+                CustomSizedBox().customSizedBox(8),
+               CreateUserButton(email: _emailController.text,password: _passwordController.text,),
 
                 const SizedBox(height: 8),
-                TextButton(
-                  onPressed: () async {
-                    try {
-                      // Send a password reset email to the user's email address
-                      await _auth.sendPasswordResetEmail(
-                          email: _emailController.text);
-
-                      // Show a snackbar indicating that the password reset email has been sent
-                      scaffoldMessenger.showSnackBar(
-                        const SnackBar(
-                          content: Text('Password reset email sent. Check your email.'),
-                        ),
-                      );
-                    } catch (e) {
-
-                      // Handle password reset failure
-                      scaffoldMessenger.showSnackBar(
-                        const SnackBar(
-                          content: Text('Password reset failed. Please try again. '),
-
-                        ),
-
-                      );
-                    }
-                  },
-                  child: const Text('Şifremi Unuttum'),
-                ),
+                ResetPasswordButton(email: _emailController.text),
               ],
             ),
           ),
@@ -216,4 +63,28 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
+
+  TextField passwordTextField() {
+    return TextField(
+                controller: _passwordController,
+                decoration: InputDecoration(
+                  labelText: LoginStrings.password,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isPasswordVisible = !_isPasswordVisible;
+                      });
+                    },
+                  ),
+                ),
+                obscureText: !_isPasswordVisible,
+              );
+  }
 }
+
+
