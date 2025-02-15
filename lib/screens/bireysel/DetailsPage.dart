@@ -1,10 +1,10 @@
 import 'dart:core';
 import 'dart:math';
 import 'package:flutter/material.dart';
-import '../Utility/globals.dart';
+
+import '../../Utility/globals.dart';
 import 'EditItemScreen.dart';
-import '../Utility/main.dart';
-import 'mainBireysel.dart';
+
 
 class DetailsPage extends StatefulWidget {
   final String title;

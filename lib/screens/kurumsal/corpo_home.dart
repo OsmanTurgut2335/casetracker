@@ -1,23 +1,23 @@
 import 'dart:core';
-import 'dart:ffi';
+
 import 'package:casetracker/Kurumsal/corpo_details.dart';
+import 'package:casetracker/core/helpers/firebase_helper.dart';
 import 'package:casetracker/core/util/corpoUtil.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
-import 'package:share/share.dart';
+
 import 'package:table_calendar/table_calendar.dart';
 import 'package:firebase_core/firebase_core.dart';
+import '../../Utility/firebase_options.dart';
+import '../../Utility/globals.dart';
+import '../../Utility/login_screen.dart';
+import '../../core/util/task/task_utils.dart';
+import '../bireysel/newItemScreen.dart';
 
-import '../Bireysel/newItemScreen.dart';
-import '../Utility/firebase_options.dart';
 
-import '../Utility/globals.dart'; // Import the globals.dart file
-import '../Utility/login_screen.dart';
 
 void KurumsalMain() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,11 +38,7 @@ extension DateTimeExtension on DateTime {
   }
 }
 
-class Task {
-  late String details;
-  late DateTime date;
-  Task({required this.details, required this.date});
-}
+
 class MyApp extends StatelessWidget {
 
 
@@ -106,13 +102,12 @@ class _MyHomePageState extends State<MyHomePage> {
   DateTime _selectedDay = DateTime.now();
   late String username;
   late String actualUsername;
-
+  TaskUtils taskUtils = TaskUtils();
   final CorpoUtil corpoUtil = CorpoUtil();
   Map<DateTime, List<Task>> tasksMapForMonth = {};
   bool isFoundingMember = false;
-  final firebaseRef = FirebaseDatabase(
-    databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
-  ).reference();
+
+  final firebaseRef = FirebaseHelper.firebaseRef;
 
   @override
   void initState() {
@@ -184,7 +179,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 } else if (value == 'showInvitationCode') {
                   _showInvitationCode();
                 } else if (value == 'shareInvitationCode') {
-                  _shareInvitationCode();
+                 // _shareInvitationCode();
                 }
               },
               itemBuilder: (BuildContext context) {
@@ -221,7 +216,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     _currentPage = index;
                     if (index == 1) {
                       _selectedDay = DateTime.now();
-                      _fetchTasksForSelectedDay(_selectedDay);
+                      taskUtils.onDaySelected(_selectedDay,tasksMap,false);
                     }
                   });
                 },
@@ -400,9 +395,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
   Widget _buildCalendarPage() {
-    BuildContext context = this.context;
+
     _fetchTasksForTheCurrentMonth();
-    bool _isNavigating = false; // Add this boolean flag
+
 
     Map<String, List<Event>> events = {};
 
@@ -444,9 +439,10 @@ class _MyHomePageState extends State<MyHomePage> {
             onDaySelected: (selectedDay, focusedDay) async {
               setState(() {
                 _selectedDay = selectedDay;
+                taskUtils.onDaySelected(selectedDay, tasksMap, false);
               });
               // Fetch tasks for the selected day from the database
-              await _fetchTasksForSelectedDay(selectedDay);
+
             },
           ),
           const SizedBox(height: 16),
@@ -459,23 +455,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 for (final task in tasksMap[_selectedDay]!)
                   GestureDetector(
                     onTap: ()  async {
-                      // Access Firestore
-                      FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-
-
-                        QuerySnapshot querySnapshot = await firestore
-                            .collection('kurumlar')
-                            .where(FieldPath.documentId, isEqualTo: widget.documentName)
-                            .get();
-
-
-
-
-
-
-
-                      // Fetch the current authenticated user
                       User? user = FirebaseAuth.instance.currentUser;
 
                       // Print statement to check if user is null
@@ -740,22 +720,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  Future<void> _fetchTasksForSelectedDay(DateTime selectedDay) async {
-    // Clear tasksMap before populating it again
-    tasksMap.clear();
 
-    // Fetch tasks for the selected day from the database
-    List<Task> tasksForSelectedDay = Globals.kurumsalItemsList.expand((items) => items).where((item) =>
-        item.date.isSameDate(selectedDay)).map((item) => Task(details: item.name, date: item.date)).toList();
-
-    // Filter out expired tasks
-    tasksForSelectedDay = tasksForSelectedDay.where((task) => !task.date.isBefore(DateTime.now())).toList();
-
-    // Populate tasksMap with non-expired tasks
-    tasksMap[selectedDay] = tasksForSelectedDay;
-
-    setState(() {});
-  }
 
 
   Future<void> _pullRefresh() async {
@@ -912,37 +877,34 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     }
   }
+/*
 
+  Future<void> _shareInvitationCode() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final firebaseRef = FirebaseHelper.firebaseRef;
 
-    Future<void> _shareInvitationCode() async {
+      // Update the reference to include the user's UID
+      DatabaseReference kurumsalReference = firebaseRef.child("users").child(user.uid).child("kurum");
 
-      User? user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final firebaseRef = FirebaseDatabase(
-          databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
-        ).reference();
+      // Read the invitation code from the database
+      DataSnapshot dataSnapshot = await kurumsalReference.get();
+      Map<dynamic, dynamic>? values = dataSnapshot.value as Map<dynamic, dynamic>?;
 
-        // Update the reference to include the user's UID
-        DatabaseReference kurumsalReference = firebaseRef.child("users").child(user.uid).child("kurum");
+      if (values != null && values.containsKey("invitationCode")) {
+        String invitationCode = values["invitationCode"] as String;
+        // Find the index of the '-' character
+        int dashIndex = widget.documentName.indexOf('-');
 
-        // Read the invitation code from the database
-        DataSnapshot dataSnapshot = await kurumsalReference.get();
-        Map<dynamic, dynamic>? values = dataSnapshot.value as Map<dynamic, dynamic>?;
+        // Extract the text before the '-' character
+        String textBeforeDash = widget.documentName.substring(0, dashIndex).trim();
 
-        if (values != null && values.containsKey("invitationCode")) {
-          String invitationCode = values["invitationCode"] as String;
-          // Find the index of the '-' character
-          int dashIndex = widget.documentName.indexOf('-');
-
-      // Extract the text before the '-' character
-          String textBeforeDash = widget.documentName.substring(0, dashIndex).trim();
-
-          Share.share("$textBeforeDash kurumumuza bu davet koduyla katılabilirsin: $invitationCode");
-
-        }
+        // Use share_plus to share the invitation code
+        Share.share("$textBeforeDash kurumumuza bu davet koduyla katılabilirsin: $invitationCode");
       }
     }
-
+  }
+*/
 
 
   Future<bool> checkIfKurucuMemberExists() async {

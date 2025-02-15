@@ -7,10 +7,14 @@ import '../../../Utility/login_screen.dart';
 import '../../../core/data/firebase_repository/database_repository.dart';
 import '../../../core/data/firebase_repository/firestore_repository.dart';
 
-class CustomPopUpMenu{
+class CustomPopUpMenu  {
 
   final DatabaseRepository _databaseRepository = DatabaseRepository();
-  final FirestoreRepository _firestoreRepository = FirestoreRepository();
+  final FirestoreRepository _firestoreRepository ;
+
+  // Inject dependencies via constructor
+  CustomPopUpMenu( this._firestoreRepository);
+
 
   PopupMenuButton customPopUp(BuildContext context){
  return    PopupMenuButton<String>(

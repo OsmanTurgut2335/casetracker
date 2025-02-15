@@ -4,9 +4,12 @@ import 'package:firebase_database/firebase_database.dart';
 import '../../helpers/firebase_helper.dart';
 
 class DatabaseRepository{
+
   final firebaseRef = FirebaseHelper.firebaseRef;
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  late final FirebaseAuth _auth ;
+
+
 
 
   Future<bool> isUserKurumsalMember(String userId) async {

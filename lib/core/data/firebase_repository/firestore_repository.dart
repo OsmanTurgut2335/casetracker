@@ -2,20 +2,19 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../helpers/firebase_helper.dart';
 
 class FirestoreRepository{
 
+  final FirebaseFirestore _firestore ;
 
-
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseAuth _auth ;
 
   final DatabaseReference _firebaseReference =  FirebaseHelper.firebaseRef;
 
-  final FirestoreRepository _firestoreRepository = FirestoreRepository();
+  FirestoreRepository(this._firestore,this._auth);
   
 
   Future<bool> updateUsername(String newUsername, BuildContext context) async {
@@ -201,7 +200,7 @@ class FirestoreRepository{
                 ),
               );
 
-              await _firestoreRepository.addMemberToFirestore(invitationCode);
+              await addMemberToFirestore(invitationCode);
               Navigator.pop(context);
               break;
             } catch (error) {

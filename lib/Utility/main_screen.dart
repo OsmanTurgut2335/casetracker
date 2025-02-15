@@ -6,14 +6,21 @@ import 'package:casetracker/product/widgets/popupmenu/customPopUpMenu.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:casetracker/Bireysel/mainBireysel.dart' as Bireysel;
+import 'package:casetracker/Bireysel/personal_home_screen.dart' as Bireysel;
 import 'package:casetracker/Kurumsal/corpo_home.dart' as Kurumsal;
 
 import '../core/helpers/firebase_helper.dart';
-import 'login_screen.dart';
+
+
 class HomeScreen extends StatefulWidget {
+
+  final FirestoreRepository firestoreRepository;
+
+  const HomeScreen({Key? key, required this.firestoreRepository}) : super(key: key);
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
+
 }
 
 class _HomeScreenState extends State<HomeScreen> {
@@ -24,13 +31,18 @@ class _HomeScreenState extends State<HomeScreen> {
   String _username = '';
   User? user = FirebaseAuth.instance.currentUser;
 
-  final FirestoreRepository _firestoreRepository = FirestoreRepository();
+  late final FirestoreRepository _firestoreRepository;
+
+
   final DatabaseRepository _databaseRepository = DatabaseRepository();
+
+
 
   @override
   void initState() {
     super.initState();
     _checkAndUpdateUsername();
+    _firestoreRepository = widget.firestoreRepository;
 
   }
 
@@ -118,11 +130,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
 
-
-
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context,)  {
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Scaffold(
@@ -130,7 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
           centerTitle: true,
           title: const Text("Ana Ekran",textAlign: TextAlign.center,),
           actions: [
-           CustomPopUpMenu().customPopUp(context),
+           CustomPopUpMenu(_firestoreRepository).customPopUp(context),
           ],
         ),
         body: Center(
