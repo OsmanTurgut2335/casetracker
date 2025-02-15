@@ -3,7 +3,7 @@ import 'package:casetracker/core/helpers/email_validate_helper.dart';
 import 'package:casetracker/product/constants/strings/login_strings.dart';
 import 'package:flutter/material.dart';
 
-import '../../../core/helpers/viewModelCreate.dart';
+import '../../../core/helpers/view_model_create.dart';
 
 class CreateUserButton extends StatelessWidget {
   const CreateUserButton({super.key, required this.email, required this.password});

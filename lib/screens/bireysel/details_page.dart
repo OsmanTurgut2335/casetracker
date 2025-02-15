@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../Utility/globals.dart';
-import 'EditItemScreen.dart';
+import 'edit_item_screen.dart';
 
 
 class DetailsPage extends StatefulWidget {

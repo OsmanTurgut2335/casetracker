@@ -9,7 +9,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 
 import '../../Utility/globals.dart';
-import 'KurumsalEditItem.dart';
+import 'institutional_item_edit.dart';
 
 
 

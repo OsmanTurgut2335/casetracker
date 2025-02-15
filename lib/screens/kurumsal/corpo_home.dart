@@ -15,7 +15,7 @@ import '../../Utility/firebase_options.dart';
 import '../../Utility/globals.dart';
 import '../../Utility/login_screen.dart';
 import '../../core/util/task/task_utils.dart';
-import '../bireysel/newItemScreen.dart';
+import '../bireysel/new_item_screen.dart';
 
 
 

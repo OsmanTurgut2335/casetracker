@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 
+import '../../../Utility/globals.dart';
 import '../../helpers/firebase_helper.dart';
 
 class DatabaseRepository{
@@ -8,8 +9,6 @@ class DatabaseRepository{
   final firebaseRef = FirebaseHelper.firebaseRef;
 
   late final FirebaseAuth _auth ;
-
-
 
 
   Future<bool> isUserKurumsalMember(String userId) async {
@@ -64,5 +63,35 @@ class DatabaseRepository{
 
     return snapshot.value.toString();
   }
+  Future<void> fetchDataFromDatabase() async {
+    Globals.itemsList[0].clear();
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
 
+
+      // Update the reference to include the user's UID and fetch tasks from the "tasks" branch
+      DatabaseReference userTaskReference = firebaseRef.child('users').child(user.uid).child('tasks');
+
+      final snapshot = await userTaskReference.get();
+
+      if (snapshot.value is Map<dynamic, dynamic>) {
+        final Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
+
+        Globals.itemsList[0].clear();
+        Globals.taskKeysByName.clear();
+        data.forEach((key, value) {
+          final item = Item(
+            name: value['name'],
+            description: value['description'],
+            date: DateTime.parse(value['date']),
+          );
+          Globals.taskKeysByName[item.name] = key;
+
+          Globals.itemsList[0].add(item);
+        });
+
+
+      }
+    }
+  }
 }

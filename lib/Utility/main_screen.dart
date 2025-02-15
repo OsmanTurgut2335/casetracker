@@ -1,7 +1,7 @@
 
 import 'package:casetracker/core/data/firebase_repository/database_repository.dart';
 import 'package:casetracker/core/data/firebase_repository/firestore_repository.dart';
-import 'package:casetracker/product/widgets/popupmenu/customPopUpMenu.dart';
+import 'package:casetracker/product/widgets/popupmenu/custom_popup_menu.dart';
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';

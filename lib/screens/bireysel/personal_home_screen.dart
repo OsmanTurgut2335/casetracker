@@ -1,7 +1,7 @@
 import 'dart:core';
+import 'package:casetracker/core/data/firebase_repository/database_repository.dart';
 import 'package:casetracker/core/helpers/firebase_helper.dart';
-import 'package:casetracker/core/util/time/date_utils.dart';
-import 'package:casetracker/core/util/util.dart';
+
 import 'package:casetracker/product/widgets/calendar_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -11,15 +11,14 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:tuple/tuple.dart';
 
-
 import '../../Bireysel/DetailsPage.dart';
 import '../../Utility/firebase_options.dart';
 import '../../Utility/globals.dart';
 import '../../Utility/login_screen.dart';
 import '../../core/util/task/task_utils.dart';
-import '../../product/widgets/homePage.dart';
+import '../../product/widgets/home_page.dart';
 import '../../product/widgets/tabbar/tab_bar_views.dart';
-import 'newItemScreen.dart';
+import 'new_item_screen.dart';
 
 
 void mainBireysel() async {
@@ -88,8 +87,6 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
 
-  final  util = Util();
-
   final PageController _pageController = PageController();
   int _currentPage = 0;
   Map<DateTime, List<Task>> tasksMap = {};
@@ -100,6 +97,8 @@ class _MyHomePageState extends State<MyHomePage> {
   late List<DateTime> daysWithTasks ;
   TabBarViews tabBarViews = TabBarViews();
   TaskUtils taskUtils = TaskUtils();
+
+  final databaseRepository=DatabaseRepository();
   final firebaseRef=FirebaseHelper.firebaseRef;
 
   late String username;
@@ -107,7 +106,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    util.fetchDataFromDatabase();
+    databaseRepository.fetchDataFromDatabase();
 
     User? user = FirebaseAuth.instance.currentUser;
     DatabaseReference userTaskReference3 = firebaseRef.child('users').child(user!.uid).child("username");
@@ -138,7 +137,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        await util.fetchDataFromDatabase();
+        await databaseRepository.fetchDataFromDatabase();
         setState(() {
           Globals.itemsList[0].sort((a, b) => a.date.compareTo(b.date));
         });
@@ -245,7 +244,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _pullRefresh() async {
 
     setState(() {
-      util.fetchDataFromDatabase();
+      databaseRepository.fetchDataFromDatabase();
     });
   }
 

@@ -1,4 +1,4 @@
-import 'package:casetracker/core/helpers/viewModelCreate.dart';
+import 'package:casetracker/core/helpers/view_model_create.dart';
 import 'package:casetracker/product/constants/strings/login_strings.dart';
 import 'package:flutter/material.dart';
 
