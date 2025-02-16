@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 
-import '../../Utility/globals.dart';
-import '../../core/util/time/date_utils.dart';
-import '../../screens/bireysel/details_page.dart';
+import '../../../Utility/globals.dart';
+import '../../../core/util/time/date_utils.dart';
+import '../../../screens/bireysel/details_page.dart';
 
 
-class TaskListPage extends StatelessWidget {
+class TaskListPage extends StatefulWidget {
   final List<Item> items;
   final Future<void> Function() onRefresh;
   final void Function(Item) removeItem;
@@ -21,14 +21,19 @@ class TaskListPage extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<TaskListPage> createState() => _TaskListPageState();
+}
+
+class _TaskListPageState extends State<TaskListPage> {
+  @override
   Widget build(BuildContext context) {
-    List<Item> sortedItems = List.from(items)..sort((a, b) => a.date.compareTo(b.date));
+    List<Item> sortedItems = List.from(widget.items)..sort((a, b) => a.date.compareTo(b.date));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         RefreshIndicator(
-          onRefresh: onRefresh,
+          onRefresh: widget.onRefresh,
           child: SizedBox(
             height: MediaQuery.of(context).size.height - kToolbarHeight - MediaQuery.of(context).padding.top - kBottomNavigationBarHeight,
             child: SingleChildScrollView(
@@ -77,12 +82,12 @@ class TaskListPage extends StatelessWidget {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => DetailsPage(
-                                    title: "Screen ${currentPage + 1}",
+                                    title: "Screen ${widget.currentPage + 1}",
                                     item: item.name,
                                     description: item.description ?? "",
                                     itemDate: item.date,
                                     onRemove: () {
-                                      removeItem(item);
+                                      widget.removeItem(item);
                                     },
                                   ),
                                 ),

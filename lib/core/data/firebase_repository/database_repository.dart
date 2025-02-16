@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/material.dart';
 
 import '../../../Utility/globals.dart';
 import '../../helpers/firebase_helper.dart';
@@ -90,6 +91,43 @@ class DatabaseRepository{
           Globals.itemsList[0].add(item);
         });
 
+
+      }
+    }
+  }
+
+  void showInvitationCode(BuildContext context) async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+
+      // Update the reference to include the user's UID
+      DatabaseReference kurumsalReference = firebaseRef.child("users").child(user.uid).child("kurum");
+
+      // Read the invitation code from the database
+      DataSnapshot dataSnapshot = await kurumsalReference.get();
+      Map<dynamic, dynamic>? values = dataSnapshot.value as Map<dynamic, dynamic>?;
+
+      if (values != null && values.containsKey("invitationCode")) {
+        String invitationCode = values["invitationCode"] as String;
+
+
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Kurum Invitation Code'),
+              content: SelectableText('Invitation Code: $invitationCode'),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text('OK'),
+                ),
+              ],
+            );
+          },
+        );
 
       }
     }

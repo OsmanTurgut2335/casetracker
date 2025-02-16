@@ -3,6 +3,9 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../../../Utility/globals.dart';
+import '../../../core/helpers/firebase_helper.dart';
+
 
 class AuthViewModel extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -82,7 +85,151 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
+  // where to use this class ?
+
+  Future<void> checkUserFoundingMembership(String documentName,bool isFoundingMember) async {
+    final String uid = FirebaseAuth.instance.currentUser!.uid;
+
+    FirebaseFirestore.instance
+        .collection('kurumlar')
+        .doc(documentName)
+        .get()
+        .then((DocumentSnapshot snapshot) {
+      if (snapshot.exists) {
+        // Explicitly cast the data object to a Map<String, dynamic>
+        Map<String, dynamic>? data = snapshot.data() as Map<String, dynamic>?;
+
+        if (data != null && data['members'] is List<dynamic>) {
+          var members = data['members'] as List<dynamic>;
+
+          if (members.isNotEmpty) {
+            // Access the fields of the first item in the 'members' array
+            var firstMember = members[0];
+            if (firstMember is Map<String, dynamic>) {
+              // Check if 'kurucuÜye' exists in the first member
+              var kurucuUyeValue = firstMember['name'];
+              if (kurucuUyeValue.toString() == uid ) {
+                isFoundingMember = true;
+              } else {
+                // If 'kurucuÜye' doesn't exist, do something else
+                print('No kurucuÜye value found');
+              }
+            } else {
+              // Handle case when firstMember is not a Map<String, dynamic>
+              print('Invalid format for first member');
+            }
+          } else {
+            // 'members' array is empty
+            print('No members found.');
+          }
+        }
+      } else {
+        // Document not found
+        print('Document not found');
+      }
+    }).catchError((error) {
+      // Handle errors
+      print('Error fetching document: $error');
+    });
+  }
+
+  void removeItem(KurumsalItem item, String? documentName) async {
+
+    // Perform asynchronous operations first
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
 
 
+      // Get the reference to the Firestore collection
+      CollectionReference kurumlarCollection = FirebaseFirestore.instance.collection('kurumlar');
 
+      // Get the document reference based on the document name
+      DocumentReference documentRef = kurumlarCollection.doc(documentName);
+
+      // Fetch the document snapshot
+      DocumentSnapshot documentSnapshot = await documentRef.get();
+
+      // Check if the document exists
+      if (documentSnapshot.exists) {
+        // Get the tasks array from the document
+        List<dynamic>? tasks = (documentSnapshot.data() as Map<String, dynamic>?)?['tasks'];
+
+
+        if (tasks != null) {
+          // Create a copy of the tasks list to iterate over
+          List<dynamic> tasksCopy = List.from(tasks);
+
+          // Iterate through the items in the tasks array
+          for (var task in tasksCopy) {
+            // Check if the task matches the item to be removed
+            if (task is Map<String, dynamic> && // Ensure task is a Map<String, dynamic>
+                task['date'] == item.date &&
+                task['description'] == item.description &&
+                task['name'] == item.name &&
+                task['username'] == user.displayName) {
+              // Remove the matching task from the tasks array
+              tasks.remove(task);
+            }
+          }
+
+          // Update the document in Firestore with the modified tasks array
+          await documentRef.update({'tasks': tasks});
+        }
+      }
+    }
+
+
+  }
+  /*
+
+  Future<void> _shareInvitationCode(String documentName) async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final firebaseRef = FirebaseHelper.firebaseRef;
+
+      // Update the reference to include the user's UID
+      DatabaseReference kurumsalReference = firebaseRef.child("users").child(user.uid).child("kurum");
+
+      // Read the invitation code from the database
+      DataSnapshot dataSnapshot = await kurumsalReference.get();
+      Map<dynamic, dynamic>? values = dataSnapshot.value as Map<dynamic, dynamic>?;
+
+      if (values != null && values.containsKey("invitationCode")) {
+        String invitationCode = values["invitationCode"] as String;
+        // Find the index of the '-' character
+        int dashIndex = documentName.indexOf('-');
+
+        // Extract the text before the '-' character
+        String textBeforeDash = documentName.substring(0, dashIndex).trim();
+
+        // Use share_plus to share the invitation code
+        Share.share("$textBeforeDash kurumumuza bu davet koduyla katılabilirsin: $invitationCode");
+      }
+    }
+  }*/
+
+  Future<bool> checkIfKurucuMemberExists() async {
+    try {
+      // Reference to the 'kurumlar' collection
+      CollectionReference kurumlarCollection = FirebaseFirestore.instance
+          .collection('kurumlar');
+
+      // Document ID of the specific document you want to check
+      String documentId = 'your_document_id_here';
+
+      // Query to check if any member has 'kurucuÜye' equal to 'evet'
+      QuerySnapshot querySnapshot = await kurumlarCollection
+          .doc(documentId)
+          .collection('members')
+          .where('kurucuÜye', isEqualTo: 'evet')
+          .get();
+
+      // Return true if at least one member is a kurucuÜye with the value "evet"
+      return querySnapshot.docs.isNotEmpty;
+    } catch (error) {
+      print('Error: $error');
+      // Return false in case of an error
+      return false;
+    }
+  }
 }

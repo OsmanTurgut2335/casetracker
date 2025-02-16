@@ -4,6 +4,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../Utility/globals.dart';
 import '../../helpers/firebase_helper.dart';
 
 class FirestoreRepository{
@@ -210,5 +211,52 @@ class FirestoreRepository{
         }
       }
     }
+  }
+
+  void _removeItem(KurumsalItem item,String documentName) async {
+
+    // Perform asynchronous operations first
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+
+
+      // Get the reference to the Firestore collection
+      CollectionReference kurumlarCollection = FirebaseFirestore.instance.collection('kurumlar');
+
+      // Get the document reference based on the document name
+      DocumentReference documentRef = kurumlarCollection.doc(documentName);
+
+      // Fetch the document snapshot
+      DocumentSnapshot documentSnapshot = await documentRef.get();
+
+      // Check if the document exists
+      if (documentSnapshot.exists) {
+        // Get the tasks array from the document
+        List<dynamic>? tasks = (documentSnapshot.data() as Map<String, dynamic>?)?['tasks'];
+
+
+        if (tasks != null) {
+          // Create a copy of the tasks list to iterate over
+          List<dynamic> tasksCopy = List.from(tasks);
+
+          // Iterate through the items in the tasks array
+          for (var task in tasksCopy) {
+            // Check if the task matches the item to be removed
+            if (task is Map<String, dynamic> && // Ensure task is a Map<String, dynamic>
+                task['date'] == item.date &&
+                task['description'] == item.description &&
+                task['name'] == item.name &&
+                task['username'] == user.displayName) {
+              // Remove the matching task from the tasks array
+              tasks.remove(task);
+            }
+          }
+
+          // Update the document in Firestore with the modified tasks array
+          await documentRef.update({'tasks': tasks});
+        }
+      }
+    }
+
   }
 }

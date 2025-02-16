@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../Utility/login_screen.dart';
 import '../../../core/data/firebase_repository/database_repository.dart';
 import '../../../core/data/firebase_repository/firestore_repository.dart';
-import '../../../screens/kurumsal/add_corpo.dart';
+import '../../../screens/kurumsal/add_item.dart';
 
 class CustomPopUpMenu  {
 

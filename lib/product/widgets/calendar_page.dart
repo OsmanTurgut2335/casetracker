@@ -13,13 +13,14 @@ class CalendarWidget extends StatefulWidget {
   final Map<DateTime, List<Task>> tasksMap;
   final Map<DateTime, List<Task>> tasksMapForMonth;
   final void Function(DatabaseReference) fetchAndUpdateState;
+  final bool isPersonal;
 
-   CalendarWidget({
+  CalendarWidget({
     Key? key,
     required this.selectedDay,
     required this.tasksMap,
     required this.tasksMapForMonth,
-    required this.fetchAndUpdateState,
+    required this.fetchAndUpdateState, required this.isPersonal,
   }) : super(key: key);
 
   @override
@@ -28,16 +29,15 @@ class CalendarWidget extends StatefulWidget {
 
 class _CalendarWidgetState extends State<CalendarWidget> {
   late DateTime _selectedDay;
-
+late final  _tasksMapForMonth;
   @override
   void initState() {
     super.initState();
     _selectedDay = widget.selectedDay;
+    _tasksMapForMonth= widget.tasksMapForMonth;
   }
 
-  void _fetchTasksForTheCurrentMonth() {
-    // Implement fetching logic for tasks
-  }
+
 
   String _formatDate(DateTime date) {
     return DateFormat("yyyy-MM-dd").format(date);
@@ -132,4 +132,52 @@ class _CalendarWidgetState extends State<CalendarWidget> {
       ),
     );
   }
+  Future<void> _fetchTasksForTheCurrentMonth() async {
+    // Clear tasksMap before populating it again
+    _tasksMapForMonth.clear();
+
+    // Get the current date
+    DateTime currentDate = DateTime.now();
+
+    // Get the first day of the current month
+    DateTime firstDayOfMonth = DateTime(currentDate.year, currentDate.month, 1);
+
+    // Get the last day of the current month
+    DateTime lastDayOfMonth = DateTime(currentDate.year, currentDate.month + 1, 0);
+
+    // Iterate through all days in the month
+    for (DateTime date = firstDayOfMonth; date.isBefore(lastDayOfMonth.add(const Duration(days: 1))); date = date.add(const Duration(days: 1))) {
+      if(widget.isPersonal){
+        for (var items in Globals.itemsList) {
+          for (var item in items) {
+            if (item.date.isSameDate(date)) {
+              _tasksMapForMonth[date] = _tasksMapForMonth[date] ?? [];
+
+              // Create a Task object with necessary details
+              Task task = Task(details: item.name, date: item.date);
+
+              // Add the Task object to the tasksMap
+              _tasksMapForMonth[date]!.add(task);
+            }
+          }
+        }
+      }
+      for (var items in Globals.kurumsalItemsList) {
+        for (var item in items) {
+          if (item.date.isSameDate(date)) {
+            _tasksMapForMonth[date] = _tasksMapForMonth[date] ?? [];
+
+            // Create a Task object with necessary details
+            Task task = Task(details: item.name, date: item.date);
+
+            // Add the Task object to the tasksMap
+            _tasksMapForMonth[date]!.add(task);
+          }
+        }
+      }
+    }
+
+    setState(() {});
+  }
+
 }

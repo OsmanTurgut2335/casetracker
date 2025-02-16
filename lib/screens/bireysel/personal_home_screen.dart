@@ -1,6 +1,7 @@
 import 'dart:core';
 import 'package:casetracker/core/data/firebase_repository/database_repository.dart';
 import 'package:casetracker/core/helpers/firebase_helper.dart';
+import 'package:casetracker/core/helpers/home_screen_value_helper.dart';
 
 import 'package:casetracker/product/widgets/calendar_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -16,7 +17,7 @@ import '../../Utility/firebase_options.dart';
 import '../../Utility/globals.dart';
 import '../../Utility/login_screen.dart';
 import '../../core/util/task/task_utils.dart';
-import '../../product/widgets/home_page.dart';
+import '../../product/widgets/homepages/personal_home.dart';
 import '../../product/widgets/tabbar/tab_bar_views.dart';
 import 'details_page.dart';
 import 'new_item_screen.dart';
@@ -87,6 +88,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  final helper=HomeScreenValueHelper();
+
 
   final PageController _pageController = PageController();
   int _currentPage = 0;
@@ -107,6 +110,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
+    helper.initializeValues();
     databaseRepository.fetchDataFromDatabase();
 
     User? user = FirebaseAuth.instance.currentUser;
@@ -200,7 +204,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                    Container(
                     child: CalendarWidget(selectedDay: _selectedDay, tasksMap: tasksMap,
-                        tasksMapForMonth: tasksMapForMonth, fetchAndUpdateState: _fetchAndUpdateState),
+                        tasksMapForMonth: tasksMapForMonth, fetchAndUpdateState: _fetchAndUpdateState,isPersonal: true,),
                  ),
                   ],
                 ),
@@ -272,7 +276,8 @@ class _MyHomePageState extends State<MyHomePage> {
       onPressed: () async {
         final newItem = await _navigateToNewItemScreen(context);
         if (newItem != null) {
-          taskUtils.addItem(newItem, username);
+          taskUtils.addItem(newItemWithShare: Tuple2(newItem as Item, true), username: username);
+          //taskUtils.addItem(newItem, username);
          setState(() {
 
          });

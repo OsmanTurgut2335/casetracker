@@ -25,13 +25,15 @@ class LoginButton extends ConsumerWidget {
           ? null
           : () async {
         if (EmailValidator.validate(emailController.text)) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Geçersiz email formatı")),
-          );
-          return;
+          await authViewModel.login(emailController.text, passwordController.text, context);
         }
       //BURDA GEÇERSİZ E MAİL FORMATINDAN BAŞKA BİR CASE VAR MI O KONTROL EDİLMİYO GALİBA
-        await authViewModel.login(emailController.text, passwordController.text, context);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+
+          const SnackBar(content: Text("Geçersiz email formatı")),
+        );
+        return;
       },
       child: authViewModel.isLoading
           ? const CircularProgressIndicator(color: Colors.white)

@@ -190,7 +190,7 @@ class TaskUtils{
 
   }
 
-  Future<void> addItem(Tuple2<Item, bool> newItemWithShare,String username) async {
+  /* Future<void> addItem(Tuple2<Item, bool> newItemWithShare,String username) async {
 
 
       final Item newItem = newItemWithShare.item1;
@@ -270,6 +270,88 @@ class TaskUtils{
         });
       }
 
+  }*/
+
+  Future<void> addItem({
+    KurumsalItem? kurumsalItem,
+    Tuple2<Item, bool>? newItemWithShare,
+    String? username,
+  }) async {
+    // Determine which type of item is being added
+    final bool isKurumsal = kurumsalItem != null;
+    final bool isRegularItem = newItemWithShare != null;
+
+    if (!isKurumsal && !isRegularItem) {
+      print("Error: No valid item provided.");
+      return;
+    }
+
+    final dynamic item = isKurumsal ? kurumsalItem : newItemWithShare!.item1;
+    final bool shareWithOrganization = isRegularItem ? newItemWithShare!.item2 : true;
+    final String actualUsername = username ?? "default_username"; // Use provided username or fallback
+
+    // Add item to appropriate list
+    if (isKurumsal) {
+      Globals.kurumsalItemsList[0].add(kurumsalItem!);
+    } else {
+      Globals.itemsList[0].add(newItemWithShare!.item1);
+    }
+
+    // Get the current authenticated user
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    // Firebase Realtime Database: Add task under user's tasks
+    DatabaseReference userTaskReference = firebaseRef.child('users').child(user.uid).child('tasks');
+    Map<String, dynamic> newTaskData = {
+      "name": item.name,
+      "description": item.description ?? "",
+      "date": item.date.toUtc().toIso8601String(),
+      "email": user.email
+    };
+    print("New task data: $newTaskData");
+
+    DatabaseReference newTaskReference = userTaskReference.push();
+    newTaskReference.set(newTaskData);
+    Globals.taskKeysByName[item.name] = newTaskReference.key!;
+
+    // Fetch organization data
+    DatabaseReference userTaskReference2 = firebaseRef.child('users').child(user.uid).child("kurum");
+    userTaskReference2.get().then((DataSnapshot snapshot) {
+      if (snapshot.value != null && snapshot.value is Map<dynamic, dynamic>) {
+        Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
+
+        if (data.containsKey('invitationCode') && data.containsKey('name')) {
+          String invitationCode = data['invitationCode'] as String;
+          String name = data['name'] as String;
+          String result = ' $name - $invitationCode ';
+          CollectionReference kurumlarCollection = FirebaseFirestore.instance.collection('kurumlar');
+
+          kurumlarCollection.where(FieldPath.documentId, isEqualTo: result).get().then((QuerySnapshot querySnapshot) {
+            if (querySnapshot.docs.isNotEmpty) {
+              DocumentReference documentReference = querySnapshot.docs.first.reference;
+              Map<String, dynamic> userData = {
+                'username': actualUsername,
+                'name': item.name,
+                'description': item.description,
+                "date": item.date.toUtc().toIso8601String(),
+              };
+
+              if (shareWithOrganization) {
+                documentReference.set({
+                  'tasks': FieldValue.arrayUnion([userData]),
+                }, SetOptions(merge: true));
+                print('Array field updated/created successfully!');
+              }
+            } else {
+              print('Document not found with the specified value.');
+            }
+          }).catchError((error) => print("Error: $error"));
+        }
+      } else {
+        print('Snapshot value is null or not a Map<dynamic, dynamic>');
+      }
+    }).catchError((error) => print("Error: $error"));
   }
 
 
