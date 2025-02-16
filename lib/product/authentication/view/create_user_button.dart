@@ -2,17 +2,19 @@
 import 'package:casetracker/core/helpers/email_validate_helper.dart';
 import 'package:casetracker/product/constants/strings/login_strings.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/helpers/view_model_create.dart';
+import '../../../core/provider/providers.dart';
 
-class CreateUserButton extends StatelessWidget {
+class CreateUserButton extends ConsumerWidget {
   const CreateUserButton({super.key, required this.email, required this.password});
 final  String email;
  final String password;
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context,WidgetRef ref) {
 
-    final authViewModel = ViewModelCreate().provideModel(context);
+    final authViewModel = ref.watch(authViewModelProvider);
 
     return  ElevatedButton(onPressed: authViewModel.isLoading
         ? null

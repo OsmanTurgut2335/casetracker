@@ -1,17 +1,20 @@
 import 'package:casetracker/core/helpers/view_model_create.dart';
 import 'package:casetracker/product/constants/strings/login_strings.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/provider/providers.dart';
 
 
 
-class ResetPasswordButton extends StatelessWidget {
+class ResetPasswordButton extends ConsumerWidget {
   const ResetPasswordButton({super.key, required this.email});
   final String email;
 
   @override
-  Widget build(BuildContext context) {
-    final authViewModel = ViewModelCreate().provideModel(context);
-
+  Widget build(BuildContext context,WidgetRef ref) {
+    //final authViewModel = ViewModelCreate().provideModel(context);
+    final authViewModel = ref.watch(authViewModelProvider);
 
     return ElevatedButton(
       onPressed: authViewModel.isLoading

@@ -3,10 +3,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 
-import '../data/firebase_repository/database_repository.dart';
+
+import '../../product/authentication/viewmodel/auth_viewmodel.dart';
 import '../data/firebase_repository/firestore_repository.dart';
 
-
+final authViewModelProvider = ChangeNotifierProvider<AuthViewModel>((ref) {
+  return AuthViewModel();
+});
 //HEYYYYYYYYYY BURDA AYNI ŞEYLERİ KULLANANLARI BESLE
 
 // Firebase Providers

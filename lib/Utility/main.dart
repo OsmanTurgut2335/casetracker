@@ -16,7 +16,11 @@ void main() async {
   );
 
 
-  runApp(  ProviderScope(child: MyApp()) );  // Riverpod wrapper)
+  runApp(
+    ProviderScope(  // Wrap MyApp with ProviderScope
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

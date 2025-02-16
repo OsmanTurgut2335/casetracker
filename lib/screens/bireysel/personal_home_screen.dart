@@ -11,13 +11,14 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:tuple/tuple.dart';
 
-import '../../Bireysel/DetailsPage.dart';
+
 import '../../Utility/firebase_options.dart';
 import '../../Utility/globals.dart';
 import '../../Utility/login_screen.dart';
 import '../../core/util/task/task_utils.dart';
 import '../../product/widgets/home_page.dart';
 import '../../product/widgets/tabbar/tab_bar_views.dart';
+import 'details_page.dart';
 import 'new_item_screen.dart';
 
 

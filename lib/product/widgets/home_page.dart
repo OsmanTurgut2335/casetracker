@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../Bireysel/DetailsPage.dart';
+
 import '../../Utility/globals.dart';
 import '../../core/util/time/date_utils.dart';
+import '../../screens/bireysel/details_page.dart';
 
 
 class TaskListPage extends StatelessWidget {

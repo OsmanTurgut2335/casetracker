@@ -6,10 +6,12 @@ import 'package:casetracker/product/widgets/popupmenu/custom_popup_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:casetracker/Bireysel/personal_home_screen.dart' as Bireysel;
-import 'package:casetracker/Kurumsal/corpo_home.dart' as Kurumsal;
+
 
 import '../core/helpers/firebase_helper.dart';
+import '../screens/bireysel/personal_home_screen.dart';
+import '../screens/kurumsal/corpo_home.dart' as Kurumsal;
+
 
 
 class HomeScreen extends StatefulWidget {
@@ -150,7 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => Bireysel.MyHomePage()),
+                    MaterialPageRoute(builder: (context) =>MyHomePage()),
                   );
                 },
                 child: const Padding(
@@ -174,7 +176,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => Kurumsal.MyHomePage(documentName: documentName),
+                        builder: (context) => Kurumsal.MyHomePage(documentName: documentName,),
                       ),
                     );
                   } else {

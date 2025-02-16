@@ -1,6 +1,6 @@
 import 'dart:core';
 
-import 'package:casetracker/Kurumsal/corpo_details.dart';
+
 import 'package:casetracker/core/helpers/firebase_helper.dart';
 import 'package:casetracker/core/util/corpoUtil.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -16,6 +16,7 @@ import '../../Utility/globals.dart';
 import '../../Utility/login_screen.dart';
 import '../../core/util/task/task_utils.dart';
 import '../bireysel/new_item_screen.dart';
+import 'corpo_details.dart';
 
 
 

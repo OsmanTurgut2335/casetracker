@@ -1,10 +1,12 @@
+import 'package:casetracker/core/provider/providers.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart';
 
 import '../viewmodel/auth_viewmodel.dart';
 
-class LoginButton extends StatelessWidget {
+class LoginButton extends ConsumerWidget {
   final TextEditingController emailController;
   final TextEditingController passwordController;
 
@@ -15,8 +17,8 @@ class LoginButton extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final authViewModel = Provider.of<AuthViewModel>(context);
+  Widget build(BuildContext context,WidgetRef ref) {
+    final authViewModel = ref.watch(authViewModelProvider);
 
     return ElevatedButton(
       onPressed: authViewModel.isLoading
