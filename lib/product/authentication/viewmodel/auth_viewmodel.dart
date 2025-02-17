@@ -12,11 +12,9 @@ class AuthViewModel extends ChangeNotifier {
   bool isLoading = false;
   String? errorMessage;
 
-  final DatabaseReference _databaseReference =
-  FirebaseDatabase(
-    databaseURL:
-    "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
-  ).reference();
+
+  final firebaseRef = FirebaseHelper.firebaseRef;
+  
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<void> login(String email, String password, BuildContext context) async {
@@ -71,7 +69,7 @@ class AuthViewModel extends ChangeNotifier {
         ])
       });
 
-      _databaseReference.child('users').child(_auth.currentUser!.uid).set({
+      firebaseRef.child('users').child(_auth.currentUser!.uid).set({
         'email': _auth.currentUser!.email,
       });
 
@@ -180,6 +178,82 @@ class AuthViewModel extends ChangeNotifier {
 
 
   }
+  
+  
+  Future<void> removeItemDetailScreen(KurumsalItem item) async {
+    // Perform asynchronous operations first
+    User? user = FirebaseAuth.instance.currentUser;
+
+    if (user != null) {
+      String? taskKey = Globals.taskKeysByName[item.name];
+
+      DatabaseReference userTaskReference =
+      firebaseRef.child('users').child(user.uid).child("tasks").child(
+          taskKey!);
+
+      await userTaskReference.remove();
+
+      DatabaseReference userKurumRef = firebaseRef.child('users').child(user.uid).child("kurum");
+
+      // Use async/await to handle the asynchronous operation
+      try {
+        DataSnapshot snapshot = await userKurumRef.get();
+
+        if (snapshot.value != null) {
+          print("The 'kurum' child exists under users/${user.uid}");
+
+          // Access data using DataSnapshot methods
+          dynamic userData = snapshot.value;
+
+          if (userData != null && userData is Map<dynamic, dynamic>) {
+            String? name = userData['name'];
+            String? invitationCode = userData['invitationCode'];
+
+            if (name != null && invitationCode != null) {
+              String kurumName = " $name - $invitationCode ";
+
+              final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+              final DocumentReference documentRef = firestore.collection('kurumlar').doc(kurumName);
+              DocumentSnapshot documentSnapshot = await documentRef.get();
+
+              if (documentSnapshot.exists) {
+                List<dynamic>? tasks = documentSnapshot['tasks'];
+                if (tasks != null) {
+                  List<dynamic> tasksCopy = List.from(tasks); // Create a copy of the list
+                  for (var task in tasksCopy) {
+                    if (task['username'] == item.username &&
+                        task['description'] == item.description &&
+                        task['name'] == item.name) {
+                      tasks.remove(task); // Modify the original list
+                    }
+                  }
+
+                  await documentRef.update({'tasks': tasks});
+                }
+
+                print("Document exists under 'kurumlar/$kurumName'");
+                // Proceed with further operations here
+                // Update UI state, etc.
+              } else {
+                print("Document does not exist under 'kurumlar/$kurumName'");
+              }
+            } else {
+              print("Invalid data format for 'name' or 'invitationCode'");
+            }
+          } else {
+            print("Invalid data format for 'userData'");
+          }
+        } else {
+          print("The 'kurum' child does not exist under users/${user.uid}");
+        }
+      } catch (error) {
+        print("Error: $error");
+      }
+
+    }
+  }
+  
   /*
 
   Future<void> _shareInvitationCode(String documentName) async {

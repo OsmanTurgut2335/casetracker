@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 
 import '../../../Utility/globals.dart';
 import '../../../core/util/time/date_utils.dart';
-import '../../../screens/bireysel/details_page.dart';
+import '../../../screens/personal/details_screen.dart';
+
 
 
 class TaskListPage extends StatefulWidget {

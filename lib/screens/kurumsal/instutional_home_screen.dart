@@ -15,8 +15,9 @@ import '../../core/provider/providers.dart';
 import '../../core/util/task/task_utils.dart';
 import '../../product/widgets/calendar_page.dart';
 import '../../product/widgets/tabbar/tab_bar_views.dart';
-import '../bireysel/new_item_screen.dart';
-import 'corpo_details.dart';
+
+import '../personal/new_item_screen.dart';
+import 'instutional_details_screen.dart';
 
 
 
@@ -312,7 +313,7 @@ class _MyHomePageState extends ConsumerState<MyHomePage> {
   }
 
   void _removeItem(KurumsalItem item) async {
-    final authViewModel = ref.read(authViewModelProvider); // Example of using a provider
+    final authViewModel = ref.read(authViewModelProvider);
    authViewModel.removeItem(item, widget.documentName);
 
     setState(() {

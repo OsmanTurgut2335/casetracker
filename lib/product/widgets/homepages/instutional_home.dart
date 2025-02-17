@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../../Utility/globals.dart';
 import '../../../core/util/corpoUtil.dart';
-import '../../../screens/kurumsal/corpo_details.dart';
+import '../../../screens/kurumsal/instutional_details_screen.dart';
 
 class InstutionalHome extends StatefulWidget {
   const InstutionalHome({super.key, required this.items, required this.documentName, required this.currentPage});

@@ -6,7 +6,8 @@ import 'package:firebase_database/firebase_database.dart';
 
 
 import '../../Utility/globals.dart';
-import '../../screens/bireysel/personal_home_screen.dart';
+import '../../screens/personal/personal_home_screen.dart';
+
 
 class CalendarWidget extends StatefulWidget {
   late  DateTime selectedDay;

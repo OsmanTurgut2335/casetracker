@@ -1,7 +1,5 @@
 
-
-
-import 'package:casetracker/screens/bireysel/personal_home_screen.dart';
+import 'package:casetracker/screens/personal/personal_home_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';

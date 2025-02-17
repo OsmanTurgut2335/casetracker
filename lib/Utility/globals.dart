@@ -4,29 +4,62 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 
+abstract class EditableItem {
+  String get name;
+  set name(String value);
+
+  String? get description;
+  set description(String? value);
+
+  DateTime get date;
+  set date(DateTime value);
+
+  String? get username => null; // Default to null
+}
+
+class Item implements EditableItem {
+  @override
+  String name;
+
+  @override
+  String? description;
+
+  @override
+  DateTime date;
+
+  Item({required this.name, this.description, required this.date});
+
+  @override
+  // TODO: implement username
+  String? get username => null;
+}
+
+class KurumsalItem implements EditableItem {
+  @override
+  String name;
+
+  @override
+  String? description;
+
+  @override
+  DateTime date;
+
+  String username;
+
+  KurumsalItem({
+    required this.name,
+    this.description,
+    required this.date,
+    required this.username,
+  });
+}
+
 
 class Task {
   late String details;
   late DateTime date;
   Task({required this.details, required this.date});
 }
-
-class Item {
-  late String name;
-  late String? description; // Allow null for description
-  late DateTime date;
-
-  Item({required this.name, this.description, required this.date});
-}
-class KurumsalItem {
-  late String name;
-  late String? description; // Allow null for description
-  late DateTime date;
-  late String username ;
-  KurumsalItem({required this.name, this.description, required this.date,required this.username});
-}
-
-
 class Globals {
   static List<List<Item>> itemsList = [
     [],
