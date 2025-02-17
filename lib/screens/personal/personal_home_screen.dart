@@ -19,7 +19,7 @@ import '../../Utility/login_screen.dart';
 import '../../core/util/task/task_utils.dart';
 import '../../product/widgets/homepages/personal_home.dart';
 import '../../product/widgets/tabbar/tab_bar_views.dart';
-import 'details_page.dart';
+import 'details_screen.dart';
 import 'new_item_screen.dart';
 
 
