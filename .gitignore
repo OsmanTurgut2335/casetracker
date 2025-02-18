@@ -45,4 +45,4 @@ app.*.map.json
 
 
 #manual
-lib/Utility/firebase_options.dart
+lib/config/firebase_options.dart

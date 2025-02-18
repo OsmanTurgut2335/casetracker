@@ -1,10 +1,11 @@
 import 'dart:core';
 import 'package:casetracker/core/widgets/button/remove_item_button.dart';
-import 'package:casetracker/core/widgets/details_page_textfields.dart';
+import 'package:casetracker/core/widgets/textfield/details_page_textfields.dart';
 import 'package:casetracker/product/constants/strings/edit_item_strings.dart';
 import 'package:flutter/material.dart';
-import '../../Utility/globals.dart';
+import '../../core/helpers/globals.dart';
 import '../../core/widgets/button/edit_item_button.dart';
+import '../../core/widgets/custom_painter.dart';
 import '../../product/widgets/sizedbox/custom_sized_box.dart';
 import 'edit_item_screen.dart';
 

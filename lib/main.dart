@@ -3,9 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart'; // Import Firebase Core
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/provider/providers.dart';
-import 'Utility/firebase_options.dart';
-import 'Utility/main_screen.dart';
-import 'Utility/login_screen.dart'; // Import your LoginScreen
+import 'config/firebase_options.dart';
+import 'screens/main_screen.dart';
+import 'screens/login_screen.dart'; // Import your LoginScreen
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

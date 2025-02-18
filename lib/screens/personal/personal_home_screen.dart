@@ -13,9 +13,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:tuple/tuple.dart';
 
 
-import '../../Utility/firebase_options.dart';
-import '../../Utility/globals.dart';
-import '../../Utility/login_screen.dart';
+import '../../config/firebase_options.dart';
+import '../../core/helpers/globals.dart';
+import '../login_screen.dart';
 import '../../core/util/task/task_utils.dart';
 import '../../product/widgets/homepages/personal_home.dart';
 import '../../product/widgets/tabbar/tab_bar_views.dart';

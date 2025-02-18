@@ -10,8 +10,8 @@ import 'package:firebase_database/firebase_database.dart';
 
 import '../core/helpers/firebase_helper.dart';
 
-import '../screens/kurumsal/instutional_home_screen.dart' as Kurumsal;
-import '../screens/personal/personal_home_screen.dart';
+import 'kurumsal/instutional_home_screen.dart' as Kurumsal;
+import 'personal/personal_home_screen.dart';
 
 
 

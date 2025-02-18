@@ -6,7 +6,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:tuple/tuple.dart';
 
 
-import '../../../Utility/globals.dart';
+import '../../helpers/globals.dart';
 import '../../helpers/firebase_helper.dart';
 
 class TaskUtils{

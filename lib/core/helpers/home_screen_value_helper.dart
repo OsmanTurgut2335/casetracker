@@ -1,7 +1,7 @@
 
 import 'package:flutter/cupertino.dart';
 
-import '../../Utility/globals.dart';
+import 'globals.dart';
 import '../data/firebase_repository/database_repository.dart';
 import '../util/task/task_utils.dart';
 import 'firebase_helper.dart';

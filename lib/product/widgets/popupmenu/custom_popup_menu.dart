@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 
-import '../../../Utility/login_screen.dart';
+import '../../../screens/login_screen.dart';
 import '../../../core/data/firebase_repository/database_repository.dart';
 import '../../../core/data/firebase_repository/firestore_repository.dart';
 import '../../../screens/kurumsal/add_item.dart';
