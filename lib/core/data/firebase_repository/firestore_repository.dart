@@ -4,7 +4,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../Utility/globals.dart';
+import '../../helpers/globals.dart';
 import '../../helpers/firebase_helper.dart';
 
 class FirestoreRepository{

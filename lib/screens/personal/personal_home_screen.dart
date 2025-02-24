@@ -2,6 +2,7 @@ import 'dart:core';
 import 'package:casetracker/core/data/firebase_repository/database_repository.dart';
 import 'package:casetracker/core/helpers/firebase_helper.dart';
 import 'package:casetracker/core/helpers/home_screen_value_helper.dart';
+import 'package:casetracker/firebase_options.dart';
 
 import 'package:casetracker/product/widgets/calendar_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -12,16 +13,13 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:tuple/tuple.dart';
 
-
-import '../../Utility/firebase_options.dart';
-import '../../Utility/globals.dart';
-import '../../Utility/login_screen.dart';
+import '../../core/helpers/globals.dart';
+import '../login_screen.dart';
 import '../../core/util/task/task_utils.dart';
 import '../../product/widgets/homepages/personal_home.dart';
 import '../../product/widgets/tabbar/tab_bar_views.dart';
 import 'details_screen.dart';
 import 'new_item_screen.dart';
-
 
 void mainBireysel() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,8 +39,6 @@ extension DateTimeExtension on DateTime {
     return year == other.year && month == other.month && day == other.day;
   }
 }
-
-
 
 class MyApp extends StatelessWidget {
   @override
@@ -69,6 +65,7 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
 class Event {
   final String title;
 
@@ -88,8 +85,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final helper=HomeScreenValueHelper();
-
+  final helper = HomeScreenValueHelper();
 
   final PageController _pageController = PageController();
   int _currentPage = 0;
@@ -98,12 +94,12 @@ class _MyHomePageState extends State<MyHomePage> {
   List<Item> filteredItems = [];
 
   DateTime _selectedDay = DateTime.now();
-  late List<DateTime> daysWithTasks ;
+  late List<DateTime> daysWithTasks;
   TabBarViews tabBarViews = TabBarViews();
   TaskUtils taskUtils = TaskUtils();
 
-  final databaseRepository=DatabaseRepository();
-  final firebaseRef=FirebaseHelper.firebaseRef;
+  final databaseRepository = DatabaseRepository();
+  final firebaseRef = FirebaseHelper.firebaseRef;
 
   late String username;
 
@@ -114,30 +110,29 @@ class _MyHomePageState extends State<MyHomePage> {
     databaseRepository.fetchDataFromDatabase();
 
     User? user = FirebaseAuth.instance.currentUser;
-    DatabaseReference userTaskReference3 = firebaseRef.child('users').child(user!.uid).child("username");
-
+    DatabaseReference userTaskReference3 =
+        firebaseRef.child('users').child(user!.uid).child("username");
 
     userTaskReference3.get().then((DataSnapshot dataSnapshot) {
       if (dataSnapshot.value != null) {
         username = dataSnapshot.value as String;
-
       }
     }).catchError((error) {
       // Handle potential errors
       print("Error: $error");
     });
-
   }
 
   void _signOut() async {
     final navigatorState = Navigator.of(context);
 
     await FirebaseAuth.instance.signOut();
-    if(mounted){
-      navigatorState.pushReplacement(MaterialPageRoute(builder: (context) => MyApp()));
+    if (mounted) {
+      navigatorState
+          .pushReplacement(MaterialPageRoute(builder: (context) => MyApp()));
     }
-
   }
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -161,7 +156,7 @@ class _MyHomePageState extends State<MyHomePage> {
               },
               itemBuilder: (BuildContext context) {
                 return [
-                  const  PopupMenuItem(
+                  const PopupMenuItem(
                     value: 'signOut',
                     child: Text('Çıkış'),
                   ),
@@ -180,7 +175,10 @@ class _MyHomePageState extends State<MyHomePage> {
               tabBarViews.buildTabBar(_currentPage),
               _currentPage == 0 ? _buildSearchBar() : const SizedBox(),
               SizedBox(
-                height: MediaQuery.of(context).size.height - kToolbarHeight - MediaQuery.of(context).padding.top - kBottomNavigationBarHeight,
+                height: MediaQuery.of(context).size.height -
+                    kToolbarHeight -
+                    MediaQuery.of(context).padding.top -
+                    kBottomNavigationBarHeight,
                 child: PageView(
                   controller: _pageController,
                   onPageChanged: (index) {
@@ -188,36 +186,45 @@ class _MyHomePageState extends State<MyHomePage> {
                       _currentPage = index;
                       if (index == 1) {
                         _selectedDay = DateTime.now();
-                        taskUtils.onDaySelected(_selectedDay,tasksMap,true);
+                        taskUtils.onDaySelected(_selectedDay, tasksMap, true);
                       }
                     });
                   },
                   children: [
                     Container(
-                   //   child: _buildPage(filteredItems.isNotEmpty ? filteredItems : Globals.itemsList[0]),
+                      //   child: _buildPage(filteredItems.isNotEmpty ? filteredItems : Globals.itemsList[0]),
                       child: TaskListPage(
-                        items: filteredItems.isNotEmpty ? filteredItems : Globals.itemsList[0],
-                        onRefresh: _pullRefresh, // Make sure this function is defined
-                        removeItem: removeItem,  // Ensure removeItem function exists
-                        currentPage: _currentPage, // Ensure _currentPage is accessible
+                        items: filteredItems.isNotEmpty
+                            ? filteredItems
+                            : Globals.itemsList[0],
+                        onRefresh:
+                            _pullRefresh, // Make sure this function is defined
+                        removeItem:
+                            removeItem, // Ensure removeItem function exists
+                        currentPage:
+                            _currentPage, // Ensure _currentPage is accessible
                       ),
                     ),
-                   Container(
-                    child: CalendarWidget(selectedDay: _selectedDay, tasksMap: tasksMap,
-                        tasksMapForMonth: tasksMapForMonth, fetchAndUpdateState: _fetchAndUpdateState,isPersonal: true,),
-                 ),
+                    Container(
+                      child: CalendarWidget(
+                        selectedDay: _selectedDay,
+                        tasksMap: tasksMap,
+                        tasksMapForMonth: tasksMapForMonth,
+                        fetchAndUpdateState: _fetchAndUpdateState,
+                        isPersonal: true,
+                      ),
+                    ),
                   ],
                 ),
               ),
             ],
           ),
         ),
-        floatingActionButton: _currentPage == 0 ? _buildFloatingButton(context) : null,
+        floatingActionButton:
+            _currentPage == 0 ? _buildFloatingButton(context) : null,
       ),
     );
   }
-
-
 
   Widget _buildSearchBar() {
     return Padding(
@@ -238,16 +245,12 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       filteredItems = Globals.itemsList[0]
           .where((item) =>
-          item.name.toLowerCase().contains(searchTerm.toLowerCase()))
+              item.name.toLowerCase().contains(searchTerm.toLowerCase()))
           .toList();
     });
-
   }
 
-
-
   Future<void> _pullRefresh() async {
-
     setState(() {
       databaseRepository.fetchDataFromDatabase();
     });
@@ -270,19 +273,18 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-
   Widget _buildFloatingButton(BuildContext context) {
     return FloatingActionButton(
       onPressed: () async {
         final newItem = await _navigateToNewItemScreen(context);
         if (newItem != null) {
-          taskUtils.addItem(newItemWithShare: Tuple2(newItem as Item, true), username: username);
+          taskUtils.addItem(
+              newItemWithShare: Tuple2(newItem as Item, true),
+              username: username);
           //taskUtils.addItem(newItem, username);
-         setState(() {
+          setState(() {});
 
-         });
-
-        //  _addItem(newItem);
+          //  _addItem(newItem);
         }
       },
       backgroundColor: Colors.green,
@@ -290,15 +292,19 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-
-  Future<Tuple2<Item, bool>?> _navigateToNewItemScreen(BuildContext context) async {
+  Future<Tuple2<Item, bool>?> _navigateToNewItemScreen(
+      BuildContext context) async {
     return await Navigator.push(
       context,
       MaterialPageRoute<Tuple2<Item, bool>>(
-        builder: (context) => NewItemScreen( showRow: true, changeBehavior: 1,),
+        builder: (context) => NewItemScreen(
+          showRow: true,
+          changeBehavior: 1,
+        ),
       ),
     );
   }
+
   void _fetchAndUpdateState(DatabaseReference userTaskReference) async {
     // Fetch the details of the task
     final snapshot = await userTaskReference.get();
@@ -306,7 +312,8 @@ class _MyHomePageState extends State<MyHomePage> {
     // Check if the snapshot value is not null and is of the expected type
     if (snapshot.value is Map<dynamic, dynamic>?) {
       // Access the data from the snapshot
-      Map<dynamic, dynamic>? taskData = snapshot.value as Map<dynamic, dynamic>?;
+      Map<dynamic, dynamic>? taskData =
+          snapshot.value as Map<dynamic, dynamic>?;
 
       if (taskData != null) {
         // Create a new Item instance using the fetched data
@@ -324,15 +331,11 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  void removeItem(Item item){
-      taskUtils.removeItem(item, username);
+  void removeItem(Item item) {
+    taskUtils.removeItem(item, username);
 
     setState(() {
       Globals.itemsList[0].remove(item);
     });
-
   }
-
-
 }
-

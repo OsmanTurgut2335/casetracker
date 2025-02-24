@@ -3,7 +3,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../../../Utility/globals.dart';
+import '../../../core/helpers/globals.dart';
 import '../../../core/helpers/firebase_helper.dart';
 
 
@@ -253,7 +253,37 @@ class AuthViewModel extends ChangeNotifier {
 
     }
   }
-  
+
+  Future<String> getInvitationCodeFromDatabase(String userId) async {
+    DatabaseReference firebaseRef = FirebaseDatabase(
+      databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
+    ).reference();
+
+    // Reference to 'invitationCode' field in Realtime Database
+    DatabaseReference userTaskReference = firebaseRef.child('users').child(userId).child('kurum').child('invitationCode');
+
+    // Get the 'invitationCode' value
+    DataSnapshot snapshot = await userTaskReference.get();
+
+    return snapshot.value.toString();
+  }
+
+
+  Future<String> getKurumNameFromDatabase(String userId) async {
+    DatabaseReference firebaseRef = FirebaseDatabase(
+      databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
+    ).reference();
+
+    // Reference to 'invitationCode' field in Realtime Database
+    DatabaseReference userTaskReference = firebaseRef.child('users').child(userId).child('kurum').child('name');
+
+    // Get the 'invitationCode' value
+    DataSnapshot snapshot = await userTaskReference.get();
+
+    return snapshot.value.toString();
+  }
+
+
   /*
 
   Future<void> _shareInvitationCode(String documentName) async {

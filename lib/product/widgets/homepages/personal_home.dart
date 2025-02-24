@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 
-import '../../../Utility/globals.dart';
+import '../../../core/helpers/globals.dart';
 import '../../../core/util/time/date_utils.dart';
 import '../../../screens/personal/details_screen.dart';
 

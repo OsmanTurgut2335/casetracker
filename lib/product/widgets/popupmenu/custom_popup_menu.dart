@@ -2,53 +2,50 @@ import 'package:app_settings/app_settings.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-
-import '../../../Utility/login_screen.dart';
+import '../../../screens/login_screen.dart';
 import '../../../core/data/firebase_repository/database_repository.dart';
 import '../../../core/data/firebase_repository/firestore_repository.dart';
-import '../../../screens/kurumsal/add_item.dart';
+import '../../../screens/kurumsal/add_instution.dart';
 
-class CustomPopUpMenu  {
-
+class CustomPopUpMenu {
   final DatabaseRepository _databaseRepository = DatabaseRepository();
-  final FirestoreRepository _firestoreRepository ;
+  final FirestoreRepository _firestoreRepository;
 
   // Inject dependencies via constructor
-  CustomPopUpMenu( this._firestoreRepository);
+  CustomPopUpMenu(this._firestoreRepository);
 
-
-  PopupMenuButton customPopUp(BuildContext context){
- return    PopupMenuButton<String>(
+  PopupMenuButton customPopUp(BuildContext context) {
+    return PopupMenuButton<String>(
       onSelected: (value) async {
         User? user = FirebaseAuth.instance.currentUser;
 
         if (value == 'addKurum') {
-          bool isUserMember = await _databaseRepository.isUserKurumsalMember(user!.uid);
+          bool isUserMember =
+              await _databaseRepository.isUserKurumsalMember(user!.uid);
 
           if (isUserMember) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                  content: Text("Zaten bir kurum üyesi olduğunuz için yeni bir kurum oluşturamazsınız."),
-                  duration: Duration(seconds: 2)
-              ),
+                  content: Text(
+                      "Zaten bir kurum üyesi olduğunuz için yeni bir kurum oluşturamazsınız."),
+                  duration: Duration(seconds: 2)),
             );
           } else {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                  builder: (context) => KurumEkleScreen()),
+              MaterialPageRoute(builder: (context) => KurumEkleScreen()),
             );
           }
         } else if (value == 'joinKurum') {
-          bool isUserMember = await _databaseRepository.isUserKurumsalMember(user!.uid);
+          bool isUserMember =
+              await _databaseRepository.isUserKurumsalMember(user!.uid);
 
           if (isUserMember) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                  content: Text("Zaten bir kurum üyesi olduğunuz için başka bir kuruma katılamazsınız"),
-                  duration: Duration(seconds: 2)
-
-              ),
+                  content: Text(
+                      "Zaten bir kurum üyesi olduğunuz için başka bir kuruma katılamazsınız"),
+                  duration: Duration(seconds: 2)),
             );
           } else {
             await _firestoreRepository.showJoinKurumDialog(context);
@@ -59,13 +56,11 @@ class CustomPopUpMenu  {
             context,
             MaterialPageRoute(builder: (context) => LoginScreen()),
           );
-        }
-        else if (value == 'ayarlar') {
+        } else if (value == 'ayarlar') {
           AppSettings.openAppSettings(type: AppSettingsType.settings);
         }
       },
-      itemBuilder: (BuildContext context) =>
-      [
+      itemBuilder: (BuildContext context) => [
         const PopupMenuItem<String>(
           value: 'addKurum',
           child: Text('Kurum Oluştur'),

@@ -1,4 +1,4 @@
-import 'package:casetracker/Utility/globals.dart';
+import 'package:casetracker/core/helpers/globals.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 

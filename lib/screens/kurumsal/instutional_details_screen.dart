@@ -7,10 +7,10 @@ import 'package:casetracker/product/constants/strings/edit_item_strings.dart';
 import 'package:casetracker/product/widgets/sizedbox/custom_sized_box.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../Utility/globals.dart';
+import '../../core/helpers/globals.dart';
 
 import '../../core/widgets/custom_painter.dart';
-import '../../core/widgets/details_page_textfields.dart';
+import '../../core/widgets/textfield/details_page_textfields.dart';
 import 'institutional_item_edit.dart';
 
 

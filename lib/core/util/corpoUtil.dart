@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 
-import '../../Utility/globals.dart';
+import '../helpers/globals.dart';
 
 class CorpoUtil{
   final firebaseRef = FirebaseDatabase(

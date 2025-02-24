@@ -1,25 +1,29 @@
 import 'dart:core';
-import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import '../../Utility/globals.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/helpers/firebase_helper.dart';
+import '../../core/helpers/globals.dart';
+import '../../core/provider/providers.dart';
+import '../../core/widgets/textfield/edit_page_textfields.dart';
 
 
 
 
-class EditItemScreen extends StatefulWidget {
+class EditItemScreen extends ConsumerStatefulWidget {
   final Item item;
 
 
-  EditItemScreen({required this.item});
+  const EditItemScreen({required this.item});
 
   @override
-  _EditItemScreenState createState() => _EditItemScreenState();
+  EditItemScreenState createState() => EditItemScreenState();
 }
 
-class _EditItemScreenState extends State<EditItemScreen>  with RouteAware {
+class EditItemScreenState extends ConsumerState<EditItemScreen>  with RouteAware {
   DateTime _selectedDueDate = DateTime.now();
   final TextEditingController _itemNameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
@@ -60,6 +64,7 @@ class _EditItemScreenState extends State<EditItemScreen>  with RouteAware {
 
   @override
   Widget build(BuildContext context) {
+    final authViewModel = ref.read(authViewModelProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Item'),
@@ -78,9 +83,9 @@ class _EditItemScreenState extends State<EditItemScreen>  with RouteAware {
             children: [
               _buildDueDateSelector(),
               const SizedBox(height: 16),
-              _buildItemNameField(),
+              EditPageTextFields().buildItemNameField(_itemNameController),
               const SizedBox(height: 16),
-              _buildDescriptionField(),
+              EditPageTextFields().buildDescriptionField(_descriptionController),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () async {
@@ -96,9 +101,7 @@ class _EditItemScreenState extends State<EditItemScreen>  with RouteAware {
                     User? user = FirebaseAuth.instance.currentUser;
 
                     if (user != null) {
-                      final firebaseRef = FirebaseDatabase(
-                        databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
-                      ).reference();
+                      final firebaseRef = FirebaseHelper.firebaseRef;
 
                       // Update Realtime Database
                       DatabaseReference userTaskReference = firebaseRef
@@ -118,8 +121,8 @@ class _EditItemScreenState extends State<EditItemScreen>  with RouteAware {
 
                       // Update Cloud Firestore
                       final firestore = FirebaseFirestore.instance;
-                      String invitationCode = await _getInvitationCodeFromDatabase(user.uid);
-                      String kurumName = await _getKurumNameFromDatabase(user.uid);
+                      String invitationCode = await authViewModel.getInvitationCodeFromDatabase(user.uid);
+                      String kurumName = await authViewModel.getKurumNameFromDatabase(user.uid);
                       String documentName = " $kurumName - $invitationCode ";
 
                       QuerySnapshot querySnapshot = await firestore
@@ -172,8 +175,6 @@ class _EditItemScreenState extends State<EditItemScreen>  with RouteAware {
 
 
 
-
-
                 },
                   style: ElevatedButton.styleFrom(
                     elevation: 5, // Shadow depth
@@ -192,153 +193,15 @@ class _EditItemScreenState extends State<EditItemScreen>  with RouteAware {
     );
   }
 
-  Widget _buildDueDateSelector() {
-    return Row(
-      children: [
-        const Text(
-          'Due Date:',
-          style: TextStyle(
-            color: Colors.black, // Set text color
-          ),
-        ),
-        const SizedBox(width: 16),
-        TextButton(
-          onPressed: () async {
-            final pickedDate = await showDatePicker(
-              context: context,
-              initialDate: _selectedDueDate,
-              firstDate: DateTime.now(),
-              lastDate: DateTime(2030),
-            );
-            if (pickedDate != null && pickedDate != _selectedDueDate) {
-              setState(() {
-                _selectedDueDate = pickedDate; // Update the selected due date
-              });
-            }
-          },
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.grey[400] , // Set button text color
-          ),
-          child: Text(
-            '${_selectedDueDate.day}/${_selectedDueDate.month}/${_selectedDueDate.year}',
-            style: const TextStyle(
-              color: Colors.grey // Set date text color
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  _buildDueDateSelector(){
+    EditPageTextFields().buildDueDateSelector(_selectedDueDate, context);
+    setState(() {
 
-
-
-  Widget _buildItemNameField() {
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: 10),
-      child: TextField(
-        controller: _itemNameController,
-        decoration: InputDecoration(
-          labelText: 'Item Name',
-          labelStyle: const TextStyle(
-            color: Colors.black, // Set label text color
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.lightGreen[200] ?? Colors.green), // Set border color when focused
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.lightGreen[200] ?? Colors.green), // Set border color when not focused
-          ),
-          filled: true,
-          fillColor: Colors.grey[400], // Set background color
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDescriptionField() {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 10),
-      child: TextField(
-        controller: _descriptionController,
-        maxLines: 3,
-        decoration: InputDecoration(
-          labelText: 'Description',
-          labelStyle: const TextStyle(
-            color: Colors.black, // Set label text color
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.lightGreen[200] ?? Colors.green), // Set border color when focused
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.lightGreen[200] ?? Colors.green), // Set border color when not focused
-          ),
-          filled: true,
-          fillColor: Colors.grey[400], // Set background color
-        ),
-      ),
-    );
-  }
-
-
-
-
-}
-
-// Helper method to get 'invitationCode' from Realtime Database
-Future<String> _getInvitationCodeFromDatabase(String userId) async {
-  DatabaseReference firebaseRef = FirebaseDatabase(
-    databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
-  ).reference();
-
-  // Reference to 'invitationCode' field in Realtime Database
-  DatabaseReference userTaskReference = firebaseRef.child('users').child(userId).child('kurum').child('invitationCode');
-
-  // Get the 'invitationCode' value
-  DataSnapshot snapshot = await userTaskReference.get();
-
-  return snapshot.value.toString();
-}
-
-// Helper method to get 'name' from Realtime Database
-Future<String> _getKurumNameFromDatabase(String userId) async {
-  DatabaseReference firebaseRef = FirebaseDatabase(
-    databaseURL: "https://casetracker-4a2ac-default-rtdb.europe-west1.firebasedatabase.app",
-  ).reference();
-
-  // Reference to 'invitationCode' field in Realtime Database
-  DatabaseReference userTaskReference = firebaseRef.child('users').child(userId).child('kurum').child('name');
-
-  // Get the 'invitationCode' value
-  DataSnapshot snapshot = await userTaskReference.get();
-
-  return snapshot.value.toString();
-}
-
-class MyCustomPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Draw your custom background here
-    final Paint paint = Paint()
-      ..color = Colors.grey[400]!
-      ..style = PaintingStyle.fill;
-
-    // Adjust the radius to make the quarter circle larger
-    final double radius = size.width / 1.5;
-
-    // Draw a quarter of a circle with the center at the left-top corner
-    canvas.drawArc(
-      Rect.fromCircle(center: Offset(0, 0), radius: radius),
-      pi / 2, // Rotate by 90 degrees
-      -pi / 2, // Sweep angle (negative for the top-left quarter)
-      true,
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) {
-    return false;
+    });
   }
 
 
 }
+
+
+

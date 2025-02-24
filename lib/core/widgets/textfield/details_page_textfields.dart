@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../product/constants/strings/edit_item_strings.dart';
+import '../../../product/constants/strings/edit_item_strings.dart';
 
 class DetailsPageTextFields{
 
